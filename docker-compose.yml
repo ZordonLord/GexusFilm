@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: zordonfilm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zordonfilm
+      POSTGRES_USER: zordonfilm
+      POSTGRES_PASSWORD: zordonfilm
+    ports:
+      - "5432:5432"
+    volumes:
+      - zordonfilm-postgres:/var/lib/postgresql/data
+      - ./backend/database.sql:/docker-entrypoint-initdb.d/001-database.sql:ro
+
+volumes:
+  zordonfilm-postgres:

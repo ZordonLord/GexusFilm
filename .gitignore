@@ -1,0 +1,48 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+api.txt
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+vendor/
+backend/vendor/
+
+# Frontend build output
+dist/
+build/
+frontend/dist/
+frontend/build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime/cache files
+*.pid
+*.seed
+*.sqlite
+*.sqlite3
+*.db
+.cache/
+tmp/
+temp/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Docker/local data
+data/postgres/
+docker-data/
