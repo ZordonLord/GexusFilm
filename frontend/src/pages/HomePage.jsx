@@ -1,5 +1,6 @@
 import Sidebar from "../components/Sidebar";
 import MovieCard from "../components/MovieCard";
+import Header from "../components/Header";
 
 const movies = [
   {
@@ -34,43 +35,45 @@ export default function HomePage() {
       <Sidebar />
 
       <main className="content">
+        <Header />
+
         <h2>Сейчас смотрят</h2>
 
         <div className="row">
           <div className="row">
-  {movies.map((movie) => (
-    <MovieCard
-      key={movie.id}
-      {...movie}
-    />
-  ))}
-</div>
+            {movies.map((movie) => (
+              <MovieCard
+                key={movie.id}
+                {...movie}
+              />
+            ))}
+          </div>
         </div>
 
         <h2>Последние добавления</h2>
 
         <div className="row">
           <div className="row">
-  {movies.map((movie) => (
-    <MovieCard
-      key={movie.id}
-      {...movie}
-    />
-  ))}
-</div>
+            {movies.map((movie) => (
+              <MovieCard
+                key={movie.id}
+                {...movie}
+              />
+            ))}
+          </div>
         </div>
 
         <h2>🔥 Огонь</h2>
 
         <div className="row">
           <div className="row">
-  {movies.map((movie) => (
-    <MovieCard
-      key={movie.id}
-      {...movie}
-    />
-  ))}
-</div>
+            {movies.map((movie) => (
+              <MovieCard
+                key={movie.id}
+                {...movie}
+              />
+            ))}
+          </div>
         </div>
       </main>
     </div>
