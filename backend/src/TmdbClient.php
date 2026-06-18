@@ -17,11 +17,24 @@ class TmdbClient
 
         $url = $this->baseUrl . $endpoint . '?' . http_build_query($params);
 
-        $response = file_get_contents($url);
+        $ch = curl_init($url);
 
-        if (!$response) {
-            throw new Exception("TMDb request failed");
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $response = curl_exec($ch);
+
+        if ($response === false) {
+            throw new Exception(curl_error($ch));
         }
+
+        curl_close($ch);
 
         return json_decode($response, true);
     }
@@ -29,6 +42,31 @@ class TmdbClient
     public function getPopularMovies()
     {
         return $this->request('/movie/popular');
+    }
+
+    public function getTrendingMoviesDay()
+    {
+        return $this->request('/trending/movie/day');
+    }
+
+    public function getNowPlayingMovies()
+    {
+        return $this->request('/movie/now_playing');
+    }
+
+    public function getUpcomingMovies()
+    {
+        return $this->request('/movie/upcoming');
+    }
+
+    public function getMovieGenres()
+    {
+        return $this->request('/genre/movie/list');
+    }
+
+    public function discoverMovies(array $params = [])
+    {
+        return $this->request('/discover/movie', $params);
     }
 
     public function getMovie(int $id)
