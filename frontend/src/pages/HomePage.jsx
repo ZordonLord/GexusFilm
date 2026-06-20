@@ -1,80 +1,50 @@
+import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import MovieCard from "../components/MovieCard";
-import Header from "../components/Header";
-
-const movies = [
-  {
-    id: 1,
-    title: "Интерстеллар",
-    year: 2014,
-    rating: 8.7,
-    poster:
-      "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
-  },
-  {
-    id: 2,
-    title: "Дюна",
-    year: 2021,
-    rating: 8.0,
-    poster:
-      "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
-  },
-  {
-    id: 3,
-    title: "Оппенгеймер",
-    year: 2023,
-    rating: 8.4,
-    poster:
-      "https://image.tmdb.org/t/p/w500/ptpr0kGAckfQkJeJIt8st5dglvd.jpg",
-  },
-];
+import { getTrendingMovies } from "../services/api";
 
 export default function HomePage() {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadMovies();
+  }, []);
+
+  async function loadMovies() {
+    try {
+      const data = await getTrendingMovies();
+
+      setMovies(data.results || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="app-layout">
       <Sidebar />
 
       <main className="content">
-        <Header />
-
         <h2>Сейчас смотрят</h2>
 
-        <div className="row">
+        {loading ? (
+          <p>Загрузка...</p>
+        ) : (
           <div className="row">
             {movies.map((movie) => (
               <MovieCard
                 key={movie.id}
-                {...movie}
+                title={movie.title}
+                year={movie.release_date?.slice(0, 4)}
+                rating={movie.vote_average?.toFixed(1)}
+                poster={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
               />
             ))}
           </div>
-        </div>
-
-        <h2>Последние добавления</h2>
-
-        <div className="row">
-          <div className="row">
-            {movies.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                {...movie}
-              />
-            ))}
-          </div>
-        </div>
-
-        <h2>🔥 Огонь</h2>
-
-        <div className="row">
-          <div className="row">
-            {movies.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                {...movie}
-              />
-            ))}
-          </div>
-        </div>
+        )}
       </main>
     </div>
   );
