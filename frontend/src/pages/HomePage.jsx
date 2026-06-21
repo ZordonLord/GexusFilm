@@ -37,6 +37,7 @@ export default function HomePage() {
             {movies.map((movie) => (
               <MovieCard
                 key={movie.id}
+                id={movie.id}
                 title={movie.title}
                 year={movie.release_date?.slice(0, 4)}
                 rating={movie.vote_average?.toFixed(1)}

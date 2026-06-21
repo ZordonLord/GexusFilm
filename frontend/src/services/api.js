@@ -9,3 +9,15 @@ export async function getTrendingMovies() {
 
     return await response.json();
 }
+
+export async function getMovie(id) {
+    const response = await fetch(
+        `${API_BASE}/movie.php?id=${id}`
+    );
+
+    if (!response.ok) {
+        throw new Error("Ошибка загрузки фильма");
+    }
+
+    return await response.json();
+}
