@@ -1,23 +1,30 @@
+// Сервис для взаимодействия с API
+
 const API_BASE = "http://138.124.240.208:8000/api";
 
-export async function getTrendingMovies() {
-    const response = await fetch(`${API_BASE}/trending.php`);
+async function request(endpoint) {
+  const response = await fetch(
+    `${API_BASE}/${endpoint}`
+  );
 
-    if (!response.ok) {
-        throw new Error("Ошибка загрузки фильмов");
-    }
+  if (!response.ok) {
+    throw new Error("API Error");
+  }
 
-    return await response.json();
+  return response.json();
 }
 
-export async function getMovie(id) {
-    const response = await fetch(
-        `${API_BASE}/movie.php?id=${id}`
-    );
+export const getTrendingMovies = () =>
+  request("trending.php");
 
-    if (!response.ok) {
-        throw new Error("Ошибка загрузки фильма");
-    }
+export const getPopularMovies = () =>
+  request("movies.php");
 
-    return await response.json();
-}
+export const getNowPlayingMovies = () =>
+  request("now-playing.php");
+
+export const getUpcomingMovies = () =>
+  request("upcoming.php");
+
+export const getMovie = (id) =>
+  request(`movie.php?id=${id}`);

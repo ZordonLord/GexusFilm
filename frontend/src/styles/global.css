@@ -128,6 +128,14 @@ body {
   color: inherit;
 }
 
+.movie-section {
+  margin-bottom: 40px;
+}
+
+.movie-section h2 {
+  margin-bottom: 16px;
+}
+
 /* -------------- 
 Хедер и поиск
 -------------- */

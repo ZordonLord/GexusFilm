@@ -1,25 +1,47 @@
+// Главная страница
+
 import { useEffect, useState } from "react";
+
 import Sidebar from "../components/Sidebar";
-import MovieCard from "../components/MovieCard";
-import { getTrendingMovies } from "../services/api";
+import MovieRow from "../components/MovieRow";
+
+import {
+  getTrendingMovies,
+  getPopularMovies,
+  getNowPlayingMovies,
+  getUpcomingMovies,
+} from "../services/api";
 
 export default function HomePage() {
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [trending, setTrending] = useState([]);
+  const [popular, setPopular] = useState([]);
+  const [nowPlaying, setNowPlaying] = useState([]);
+  const [upcoming, setUpcoming] = useState([]);
 
   useEffect(() => {
-    loadMovies();
+    loadData();
   }, []);
 
-  async function loadMovies() {
+  async function loadData() {
     try {
-      const data = await getTrendingMovies();
+      const [
+        trendingData,
+        popularData,
+        nowPlayingData,
+        upcomingData,
+      ] = await Promise.all([
+        getTrendingMovies(),
+        getPopularMovies(),
+        getNowPlayingMovies(),
+        getUpcomingMovies(),
+      ]);
 
-      setMovies(data.results || []);
+      setTrending(trendingData.results || []);
+      setPopular(popularData.results || []);
+      setNowPlaying(nowPlayingData.results || []);
+      setUpcoming(upcomingData.results || []);
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -28,24 +50,25 @@ export default function HomePage() {
       <Sidebar />
 
       <main className="content">
-        <h2>Сейчас смотрят</h2>
+        <MovieRow
+          title="🔥 Сейчас смотрят"
+          movies={trending}
+        />
 
-        {loading ? (
-          <p>Загрузка...</p>
-        ) : (
-          <div className="row">
-            {movies.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                id={movie.id}
-                title={movie.title}
-                year={movie.release_date?.slice(0, 4)}
-                rating={movie.vote_average?.toFixed(1)}
-                poster={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-              />
-            ))}
-          </div>
-        )}
+        <MovieRow
+          title="🎬 Популярное"
+          movies={popular}
+        />
+
+        <MovieRow
+          title="🍿 Сейчас в кино"
+          movies={nowPlaying}
+        />
+
+        <MovieRow
+          title="🚀 Скоро выйдут"
+          movies={upcoming}
+        />
       </main>
     </div>
   );
