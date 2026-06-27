@@ -1,0 +1,16 @@
+:root {
+  --bg: #020817;
+
+  --card-bg: #111827;
+  --card-width: 220px;
+
+  --text: #ffffff;
+  --text-muted: #9ca3af;
+
+  --primary: #3b82f6;
+  --warning: #fbbf24;
+
+  --radius: 20px;
+
+  --sidebar-width: 220px;
+}

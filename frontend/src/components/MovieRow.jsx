@@ -1,6 +1,7 @@
 // Компонент для отображения ряда фильмов
 
 import MovieCard from "./MovieCard";
+import "../styles/MovieRow.css";
 
 export default function MovieRow({
   title,

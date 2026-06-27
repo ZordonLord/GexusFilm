@@ -1,0 +1,25 @@
+.movie-section {
+  margin-bottom: 48px;
+}
+
+.movie-section h2 {
+  margin-bottom: 16px;
+}
+
+.row {
+  display: flex;
+  gap: 20px;
+
+  overflow-x: auto;
+
+  padding-bottom: 10px;
+}
+
+.row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.row::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.15);
+  border-radius: 20px;
+}

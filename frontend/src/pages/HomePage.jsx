@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import Sidebar from "../components/Sidebar";
 import MovieRow from "../components/MovieRow";
+import "../styles/HomePage.css";
 
 import {
   getTrendingMovies,

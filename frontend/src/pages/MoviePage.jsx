@@ -1,89 +1,86 @@
-// Страница с подробной информацией о фильме
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+
 import { getMovie } from "../services/api";
 
+import MovieHero from "../components/MovieHero";
+
+import "../styles/MoviePage.css";
+
 export default function MoviePage() {
+
     const { id } = useParams();
 
     const [movie, setMovie] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+
+        async function loadMovie() {
+
+            setLoading(true);
+
+            try {
+
+                const data = await getMovie(id);
+                setMovie(data);
+
+            } finally {
+
+                setLoading(false);
+
+            }
+
+        }
+
         loadMovie();
+
     }, [id]);
 
-    async function loadMovie() {
-        const data = await getMovie(id);
-        setMovie(data);
+    if (loading) {
+
+        return (
+            <div className="movie-loading">
+                Загрузка...
+            </div>
+        );
+
     }
 
     if (!movie) {
-        return <div style={{ padding: "30px" }}>Загрузка...</div>;
+
+        return (
+            <div className="movie-loading">
+                Фильм не найден
+            </div>
+        );
+
     }
 
-    const poster = movie.poster_path
-        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-        : "";
-
-    const backdrop = movie.backdrop_path
-        ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-        : "";
-
     return (
+
         <div
             className="movie-page"
             style={{
-                backgroundImage: `linear-gradient(
-          rgba(0,0,0,.85),
-          rgba(0,0,0,.95)
-        ), url(${backdrop})`,
+                backgroundImage:
+                    `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})`
             }}
         >
-            <div className="movie-container">
-                <img
-                    className="movie-poster"
-                    src={poster}
-                    alt={movie.title}
-                />
 
-                <div className="movie-details">
-                    <h1>{movie.title}</h1>
+            <MovieHero movie={movie} />
 
-                    <div className="movie-meta">
-                        ⭐ {movie.vote_average?.toFixed(1)}
+            {/* Здесь будут следующие блоки */}
 
-                        {" • "}
+            {/* <MovieCast movieId={id} /> */}
 
-                        {movie.release_date?.slice(0, 4)}
+            {/* <MovieTrailer movieId={id} /> */}
 
-                        {" • "}
+            {/* <MovieRecommendations movieId={id} /> */}
 
-                        {movie.runtime} мин
-                    </div>
+            {/* <MovieComments movieId={id} /> */}
 
-                    <p className="movie-overview">
-                        {movie.overview}
-                    </p>
-
-                    <div className="movie-actions">
-                        <button className="watch-btn">
-                            ▶ Смотреть
-                        </button>
-                    </div>
-
-                    <div className="genres">
-                        {movie.genres?.map((genre) => (
-                            <span
-                                key={genre.id}
-                                className="genre"
-                            >
-                                {genre.name}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </div>
         </div>
+
     );
+
 }
