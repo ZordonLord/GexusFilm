@@ -1,44 +1,61 @@
-# ZordonFilm
+# GexusFilm
 
-Агрегатор фильмов на базе TMDB API. Проект показывает популярные фильмы, ищет фильмы по названию и открывает страницу фильма с деталями. Backend умеет сохранять ответы TMDB в PostgreSQL, чтобы повторно использовать уже полученные данные.
+GexusFilm — киноагрегатор с фронтендом на React/Vite и бекендом на PHP. Приложение показывает трендовые фильмы, популярные релизы, сейчас идущие киносеансы и будущие премьеры.
 
 ## Стек
 
-- Frontend: React, TypeScript, Vite, Tailwind CSS
-- Backend: PHP
+- Frontend: React, Vite, Tailwind CSS
+- Backend: PHP (без фреймворка)
 - Database: PostgreSQL
-- API: The Movie Database API
+- API: TMDB (The Movie Database)
 
 ## Структура проекта
 
 ```text
 backend/
   public/
-    api/              # JSON API для фронтенда
-    movies.php        # простая PHP-страница популярных фильмов
-    movie.php         # простая PHP-страница фильма
-    search.php        # простая PHP-страница поиска
+    api/                # JSON API для фронтенда
+    movie.php           # страница фильма
+    movies.php          # страница списка популярных фильмов
+    search.php          # страница поиска
   src/
-    TmdbClient.php
-    Database.php
-    MovieRepository.php
     bootstrap.php
     config.php
+    Database.php
+    MovieRepository.php
+    TmdbClient.php
   database.sql
+  .env.example
 frontend/
   src/
+    App.jsx
+    main.jsx
+    pages/
+    components/
+    styles/
+  package.json
+  vite.config.js
+  eslint.config.js
+  README.md
 docker-compose.yml
 ```
 
+## Что работает
+
+- Загрузка трендовых, популярных, сейчас идущих и будущих фильмов
+- Поиск фильмов по названию
+- Страница фильма с деталями
+- Кэширование API-ответов TMDB в PostgreSQL
+
 ## Настройка backend
 
-Создай локальный env-файл:
+Скопируй пример конфигурации:
 
 ```powershell
 Copy-Item backend\.env.example backend\.env
 ```
 
-В `backend/.env` можно поменять:
+Открой `backend/.env` и задай ключ TMDB и параметры базы данных:
 
 ```env
 TMDB_API_KEY=your_tmdb_api_key
@@ -52,13 +69,17 @@ DB_PASSWORD=zordonfilm
 CACHE_TTL_MINUTES=1440
 ```
 
-Важно: для подключения PHP к PostgreSQL нужен модуль `pdo_pgsql`. Проверь его так:
+### Важно
+
+Для работы сохранения данных в PostgreSQL требуется PHP-расширение `pdo_pgsql`.
+
+Проверь его командой:
 
 ```powershell
 php -m
 ```
 
-Если `pdo_pgsql` в списке нет, включи расширение в `php.ini`. Без него приложение продолжит работать через TMDB, но сохранять данные в PostgreSQL не сможет.
+Если `pdo_pgsql` отсутствует, включи его в `php.ini`.
 
 ## Запуск PostgreSQL
 
@@ -66,7 +87,7 @@ php -m
 docker compose up -d postgres
 ```
 
-При первом запуске Docker применит схему из `backend/database.sql` и создаст таблицы `movies` и `api_cache`.
+При первом запуске docker автоматически применит схему из `backend/database.sql`.
 
 ## Запуск backend
 
@@ -74,45 +95,48 @@ docker compose up -d postgres
 php -S localhost:8000 -t backend/public
 ```
 
-API endpoints:
+После этого API доступны по адресу:
 
 - `http://localhost:8000/api/movies.php`
 - `http://localhost:8000/api/search.php?q=matrix`
 - `http://localhost:8000/api/movie.php?id=603`
 
+> В текущей версии фронтенда база `API_BASE` в `frontend/src/services/api.js` указывает на `http://138.124.240.208:8000/api`.
+> Для локальной разработки замените `API_BASE` на `http://localhost:8000/api`.
+
 ## Запуск frontend
 
 ```powershell
-Set-Location frontend
+cd frontend
 npm install
 npm run dev
 ```
 
-После запуска Vite откроет адрес вида:
+Откройте адрес из вывода Vite, например:
 
 ```text
 http://localhost:5173
 ```
 
-Frontend сейчас ожидает backend на `http://localhost:8000`.
+## Конфигурация frontend
 
-## Как работает сохранение данных
+Фронтенд использует `frontend/src/styles/app.css` как основной global-стиль и `frontend/src/pages/HomePage.css` для страницы с фильмами.
 
-1. Frontend запрашивает фильмы у PHP API.
-2. Backend сначала проверяет PostgreSQL-кэш.
-3. Если кэш найден и не истек, backend возвращает данные из PostgreSQL.
-4. Если данных нет, backend делает запрос в TMDB.
-5. Ответ TMDB сохраняется в PostgreSQL и возвращается клиенту.
+## Как работает кэширование
 
-Данные популярных фильмов и поиска сохраняются как кэш API-ответов, а карточки фильмов дополнительно сохраняются в таблицу `movies`.
+1. Фронтенд запрашивает данные у PHP API.
+2. Backend проверяет PostgreSQL-кэш.
+3. Если кэш действителен, данные возвращаются из PostgreSQL.
+4. Если нет — backend запрашивает TMDB.
+5. Ответ сохраняется и возвращается клиенту.
 
-## Git
+## Исключения из репозитория
 
 В репозиторий не должны попадать:
 
 - `backend/.env`
 - `api.txt`
 - `node_modules/`
-- локальные логи, кэши и временные файлы
+- локальные файлы, логи и кэши
 
-Пример настроек хранится в `backend/.env.example`.
+Пример конфигурации хранится в `backend/.env.example`.
