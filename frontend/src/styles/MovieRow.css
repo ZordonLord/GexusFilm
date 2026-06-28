@@ -1,26 +1,185 @@
 .movie-section {
-  margin-bottom: 48px;
+
+  margin-bottom: 56px;
+
+}
+
+.movie-section__header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 18px;
+
 }
 
 .movie-section h2 {
-  margin-bottom: 16px;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
 }
 
 .row {
+
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
+
+  gap: 16px;
 
   overflow-x: auto;
 
-  padding-bottom: 10px;
+  overflow-y: hidden;
+
+  scroll-behavior: smooth;
+
+  -webkit-overflow-scrolling: touch;
+
+  padding-bottom: 8px;
+
+  width: 100%;
+
+  max-width: 100%;
+
+  min-width: 0;
+
 }
 
 .row::-webkit-scrollbar {
+
   height: 8px;
+
+}
+
+.row::-webkit-scrollbar-track {
+
+  background: rgba(255, 255, 255, 0.05);
+
+  border-radius: 999px;
+
 }
 
 .row::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,.15);
-  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.22);
+
+  border-radius: 999px;
+
+}
+
+.row::-webkit-scrollbar-thumb:hover {
+
+  background: rgba(255, 255, 255, 0.35);
+
+}
+
+.row {
+
+  scrollbar-width: thin;
+
+  scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.05);
+
+}
+
+.movie-row__controls {
+
+  display: flex;
+
+  gap: 10px;
+
+  position: relative;
+
+  z-index: 2;
+
+}
+
+.row-btn {
+
+  width: 42px;
+
+  height: 42px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: #1c2536;
+
+  color: white;
+
+  font-size: 18px;
+
+  cursor: pointer;
+
+  transition: .25s;
+
+}
+
+.row-btn:hover {
+
+  background: var(--primary);
+
+  transform: scale(1.08);
+
+}
+
+.row-btn.disabled {
+
+  opacity: .3;
+
+  pointer-events: none;
+
+}
+
+.row-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.row-wrapper::before,
+.row-wrapper::after {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+
+  width: 70px;
+
+  pointer-events: none;
+  z-index: 5;
+
+  transition: opacity .3s ease;
+}
+
+.row-wrapper::before {
+  left: 0;
+
+  background: linear-gradient(
+    to right,
+    var(--bg) 0%,
+    rgba(2, 8, 23, .85) 30%,
+    rgba(2, 8, 23, 0) 100%
+  );
+}
+
+.row-wrapper::after {
+  right: 0;
+
+  background: linear-gradient(
+    to left,
+    var(--bg) 0%,
+    rgba(2, 8, 23, .85) 30%,
+    rgba(2, 8, 23, 0) 100%
+  );
+}
+
+.row-wrapper.hide-left::before {
+  opacity: 0;
+}
+
+.row-wrapper.hide-right::after {
+  opacity: 0;
 }

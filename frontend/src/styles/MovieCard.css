@@ -1,13 +1,13 @@
 .movie-card-link {
-    display: block;
+  display: block;
 
-    flex: 0 0 var(--card-width);
+  flex: 0 0 var(--card-width);
 
-    width: var(--card-width);
+  width: var(--card-width);
 
-    text-decoration: none;
+  text-decoration: none;
 
-    color: inherit;
+  color: inherit;
 }
 
 .movie-card {
