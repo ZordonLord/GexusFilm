@@ -1,28 +1,8 @@
 <?php
 
-require_once __DIR__ . '/../../src/bootstrap.php';
+declare(strict_types=1);
 
-$client = new TmdbClient(tmdb_api_key());
-$repository = movie_repository();
-$cacheKey = 'movies:upcoming';
+require_once __DIR__ . '/../../src/routes.php';
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-
-if ($repository) {
-    $cached = $repository->getCachedResponse($cacheKey);
-
-    if ($cached) {
-        json_response($cached);
-        exit;
-    }
-}
-
-$data = $client->getUpcomingMovies();
-
-if ($repository) {
-    $repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
-    $repository->saveMovieSummaries($data['results'] ?? []);
-}
-
-json_response($data);
+$router = createRouter();
+$router->dispatch('GET', '/api/upcoming');
