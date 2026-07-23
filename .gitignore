@@ -46,3 +46,4 @@ desktop.ini
 # Docker/local data
 data/postgres/
 docker-data/
+AI_AGENTS.md

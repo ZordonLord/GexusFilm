@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once __DIR__ . '/Router.php';
+
+use App\Router;
+use App\TmdbClient;
 
 function createRouter(): Router
 {

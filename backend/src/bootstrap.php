@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
+require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/Database.php';
-require_once __DIR__ . '/MovieRepository.php';
-require_once __DIR__ . '/TmdbClient.php';
+
+use App\Database;
+use App\MovieRepository;
+use App\Response;
 
 function movie_repository(): ?MovieRepository
 {
@@ -18,5 +22,5 @@ function movie_repository(): ?MovieRepository
 
 function json_response(array $data): void
 {
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    Response::json($data);
 }

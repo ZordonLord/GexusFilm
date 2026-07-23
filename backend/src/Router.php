@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+namespace App;
+
+use function json_encode;
+
 final class Router
 {
     /** @var array<string, array<string, callable>> */
@@ -45,7 +49,7 @@ final class Router
         if ($handler === null) {
             $this->sendJsonHeaders();
             http_response_code(404);
-            json_response([
+            Response::json([
                 'error' => [
                     'code' => 'NOT_FOUND',
                     'message' => "Route {$method} {$path} not found",

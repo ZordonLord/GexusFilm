@@ -1,5 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
+namespace App;
+
+use PDO;
+
 require_once __DIR__ . '/config.php';
 
 class Database
