@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use function json_encode;
+use Throwable;
 
 final class Router
 {
@@ -60,7 +61,12 @@ final class Router
         }
 
         $this->sendJsonHeaders();
-        $handler();
+        
+        try {
+            $handler();
+        } catch (Throwable $exception) {
+            \App\Http\ExceptionHandler::handle($exception);
+        }
     }
 
     private function normalizePath(string $path): string

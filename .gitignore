@@ -47,3 +47,4 @@ desktop.ini
 data/postgres/
 docker-data/
 AI_AGENTS.md
+backend/.phpunit.cache/test-results
