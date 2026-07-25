@@ -22,9 +22,14 @@ function movie_repository(): ?MovieRepository
     }
 }
 
+function content_source(): \App\Service\ContentSourceInterface
+{
+    return new \App\TmdbClient(tmdb_api_key());
+}
+
 function movie_service(): MovieService
 {
-    return new MovieService(new \App\TmdbClient(tmdb_api_key()), movie_repository());
+    return new MovieService(content_source(), movie_repository());
 }
 
 function movie_controller(): MovieController

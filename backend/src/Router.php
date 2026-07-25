@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use function json_encode;
+
 use Throwable;
 
 final class Router
@@ -61,7 +62,7 @@ final class Router
         }
 
         $this->sendJsonHeaders();
-        
+
         try {
             $handler();
         } catch (Throwable $exception) {

@@ -9,7 +9,9 @@ use Exception;
 
 class MovieController
 {
-    public function __construct(private MovieService $movieService) {}
+    public function __construct(private MovieService $movieService)
+    {
+    }
 
     public function getTrending(): array
     {
@@ -43,7 +45,7 @@ class MovieController
     public function search(string $query): array
     {
         $query = trim($query);
-        
+
         if (empty($query)) {
             throw new \InvalidArgumentException('Query cannot be empty');
         }
@@ -54,7 +56,7 @@ class MovieController
     public function discover(array $params): array
     {
         $genreId = $params['genre_id'] ?? 0;
-        
+
         if ($genreId <= 0) {
             throw new \InvalidArgumentException('genre_id is required');
         }

@@ -12,7 +12,7 @@ class ExceptionHandler
     public static function handle(Throwable $exception): void
     {
         error_log('Exception caught: ' . $exception->getMessage() . ' in ' . $exception->getFile() . ':' . $exception->getLine());
-        
+
         if ($exception instanceof InvalidArgumentException) {
             http_response_code(400);
             self::jsonResponse([

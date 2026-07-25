@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Service\ContentSourceInterface;
 use Exception;
 
-class TmdbClient
+class TmdbClient implements ContentSourceInterface
 {
     private string $apiKey;
     private string $baseUrl = 'https://api.themoviedb.org/3';
@@ -46,42 +47,42 @@ class TmdbClient
         return json_decode($response, true);
     }
 
-    public function getPopularMovies()
+    public function getPopularMovies(): array
     {
         return $this->request('/movie/popular');
     }
 
-    public function getTrendingMoviesDay()
+    public function getTrendingMoviesDay(): array
     {
         return $this->request('/trending/movie/day');
     }
 
-    public function getNowPlayingMovies()
+    public function getNowPlayingMovies(): array
     {
         return $this->request('/movie/now_playing');
     }
 
-    public function getUpcomingMovies()
+    public function getUpcomingMovies(): array
     {
         return $this->request('/movie/upcoming');
     }
 
-    public function getMovieGenres()
+    public function getMovieGenres(): array
     {
         return $this->request('/genre/movie/list');
     }
 
-    public function discoverMovies(array $params = [])
+    public function discoverMovies(array $params = []): array
     {
         return $this->request('/discover/movie', $params);
     }
 
-    public function getMovie(int $id)
+    public function getMovie(int $id): array
     {
         return $this->request("/movie/$id");
     }
 
-    public function search(string $query)
+    public function search(string $query): array
     {
         return $this->request('/search/movie', [
             'query' => $query

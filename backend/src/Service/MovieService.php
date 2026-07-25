@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\TmdbClient;
 use App\Repository\MovieRepository;
 use Exception;
 
 class MovieService
 {
     public function __construct(
-        private TmdbClient $tmdbClient,
+        private ContentSourceInterface $contentSource,
         private ?MovieRepository $repository
-    ) {}
+    ) {
+    }
 
     public function getTrendingMovies(): array
     {
         $cacheKey = 'movies:trending:day';
-        
+
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
             if ($cached) {
@@ -26,7 +26,7 @@ class MovieService
             }
         }
 
-        $data = $this->tmdbClient->getTrendingMoviesDay();
+        $data = $this->contentSource->getTrendingMoviesDay();
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
@@ -39,7 +39,7 @@ class MovieService
     public function getPopularMovies(): array
     {
         $cacheKey = 'movies:popular';
-        
+
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
             if ($cached) {
@@ -47,7 +47,7 @@ class MovieService
             }
         }
 
-        $data = $this->tmdbClient->getPopularMovies();
+        $data = $this->contentSource->getPopularMovies();
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
@@ -60,7 +60,7 @@ class MovieService
     public function getNowPlayingMovies(): array
     {
         $cacheKey = 'movies:now_playing';
-        
+
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
             if ($cached) {
@@ -68,7 +68,7 @@ class MovieService
             }
         }
 
-        $data = $this->tmdbClient->getNowPlayingMovies();
+        $data = $this->contentSource->getNowPlayingMovies();
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
@@ -81,7 +81,7 @@ class MovieService
     public function getUpcomingMovies(): array
     {
         $cacheKey = 'movies:upcoming';
-        
+
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
             if ($cached) {
@@ -89,7 +89,7 @@ class MovieService
             }
         }
 
-        $data = $this->tmdbClient->getUpcomingMovies();
+        $data = $this->contentSource->getUpcomingMovies();
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
@@ -108,7 +108,7 @@ class MovieService
             }
         }
 
-        $movie = $this->tmdbClient->getMovie($id);
+        $movie = $this->contentSource->getMovie($id);
 
         if ($this->repository) {
             $this->repository->saveMovieDetails($movie);
@@ -120,7 +120,7 @@ class MovieService
     public function searchMovies(string $query): array
     {
         $cacheKey = 'search:' . mb_strtolower($query);
-        
+
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
             if ($cached) {
@@ -128,7 +128,7 @@ class MovieService
             }
         }
 
-        $result = $this->tmdbClient->search($query);
+        $result = $this->contentSource->search($query);
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $result, cache_ttl_minutes());
@@ -142,7 +142,7 @@ class MovieService
     {
         $genreId = $params['genre_id'] ?? 0;
         $cacheKey = "discover:genre:$genreId";
-        
+
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
             if ($cached) {
@@ -150,7 +150,7 @@ class MovieService
             }
         }
 
-        $data = $this->tmdbClient->discoverMovies([
+        $data = $this->contentSource->discoverMovies([
             'with_genres' => $genreId,
             'sort_by' => 'popularity.desc',
         ]);
@@ -166,7 +166,7 @@ class MovieService
     public function getGenres(): array
     {
         $cacheKey = 'genres:movie';
-        
+
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
             if ($cached) {
@@ -174,7 +174,7 @@ class MovieService
             }
         }
 
-        $data = $this->tmdbClient->getMovieGenres();
+        $data = $this->contentSource->getMovieGenres();
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes() * 7);
