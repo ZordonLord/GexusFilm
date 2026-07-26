@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS movies (
     id BIGSERIAL PRIMARY KEY,
-    tmdb_id INTEGER NOT NULL UNIQUE,
+    tmdb_id INTEGER NOT NULL,
+    media_type VARCHAR(10) NOT NULL DEFAULT 'movie',
     title TEXT,
     original_title TEXT,
     overview TEXT,
@@ -15,7 +16,8 @@ CREATE TABLE IF NOT EXISTS movies (
     tmdb_payload JSONB NOT NULL,
     has_details BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(tmdb_id, media_type)
 );
 
 CREATE INDEX IF NOT EXISTS movies_title_idx ON movies USING GIN (to_tsvector('simple', COALESCE(title, '')));

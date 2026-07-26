@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Service;
 
 /**
- * Абстракция источника данных о фильмах.
+ * Абстракция источника данных о фильмах и сериалах.
  *
- * Позволяет MovieService работать с любым провайдером контента
+ * Позволяет сервисам работать с любым провайдером контента
  * (TMDB, Кинопоиск, мок для тестов и т.д.) через единый контракт.
  */
 interface ContentSourceInterface
 {
+    // -- Movies --
+
     /**
      * Популярные фильмы.
      */
@@ -51,4 +53,51 @@ interface ContentSourceInterface
      * Поиск фильмов по текстовому запросу.
      */
     public function search(string $query): array;
+
+    // -- TV Shows --
+
+    /**
+     * Трендовые сериалы за день.
+     */
+    public function getTrendingTvDay(): array;
+
+    /**
+     * Популярные сериалы.
+     */
+    public function getPopularTv(): array;
+
+    /**
+     * Сериалы, идущие в эфире.
+     */
+    public function getOnTheAirTv(): array;
+
+    /**
+     * Сериалы, выходящие сегодня.
+     */
+    public function getAiringTodayTv(): array;
+
+    /**
+     * Список жанров сериалов.
+     */
+    public function getTvGenres(): array;
+
+    /**
+     * Детальная информация о сериале по его ID.
+     */
+    public function getTv(int $id): array;
+
+    /**
+     * Информация о конкретном сезоне сериала.
+     */
+    public function getTvSeason(int $seriesId, int $seasonNumber): array;
+
+    /**
+     * Поиск сериалов по текстовому запросу.
+     */
+    public function searchTv(string $query): array;
+
+    /**
+     * Поиск сериалов по параметрам (discover).
+     */
+    public function discoverTv(array $params = []): array;
 }

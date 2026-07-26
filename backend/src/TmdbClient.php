@@ -47,6 +47,8 @@ class TmdbClient implements ContentSourceInterface
         return json_decode($response, true);
     }
 
+    // -- Movies --
+
     public function getPopularMovies(): array
     {
         return $this->request('/movie/popular');
@@ -87,5 +89,54 @@ class TmdbClient implements ContentSourceInterface
         return $this->request('/search/movie', [
             'query' => $query
         ]);
+    }
+
+    // -- TV Shows --
+
+    public function getTrendingTvDay(): array
+    {
+        return $this->request('/trending/tv/day');
+    }
+
+    public function getPopularTv(): array
+    {
+        return $this->request('/tv/popular');
+    }
+
+    public function getOnTheAirTv(): array
+    {
+        return $this->request('/tv/on_the_air');
+    }
+
+    public function getAiringTodayTv(): array
+    {
+        return $this->request('/tv/airing_today');
+    }
+
+    public function getTvGenres(): array
+    {
+        return $this->request('/genre/tv/list');
+    }
+
+    public function getTv(int $id): array
+    {
+        return $this->request("/tv/$id");
+    }
+
+    public function getTvSeason(int $seriesId, int $seasonNumber): array
+    {
+        return $this->request("/tv/$seriesId/season/$seasonNumber");
+    }
+
+    public function searchTv(string $query): array
+    {
+        return $this->request('/search/tv', [
+            'query' => $query
+        ]);
+    }
+
+    public function discoverTv(array $params = []): array
+    {
+        return $this->request('/discover/tv', $params);
     }
 }

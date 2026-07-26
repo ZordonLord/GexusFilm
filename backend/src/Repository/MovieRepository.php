@@ -43,11 +43,13 @@ class MovieRepository
         ]);
     }
 
+    // ── Movie details ────────────────────────────────────────
+
     public function getMovieDetails(int $tmdbId): ?array
     {
         $statement = $this->pdo->prepare(
             'SELECT tmdb_payload FROM movies
-             WHERE tmdb_id = :tmdb_id AND has_details = TRUE'
+             WHERE tmdb_id = :tmdb_id AND media_type = \'movie\' AND has_details = TRUE'
         );
         $statement->execute(['tmdb_id' => $tmdbId]);
 
@@ -64,14 +66,14 @@ class MovieRepository
 
         $statement = $this->pdo->prepare(
             'INSERT INTO movies (
-                tmdb_id, title, original_title, overview, poster_path, backdrop_path,
+                tmdb_id, media_type, title, original_title, overview, poster_path, backdrop_path,
                 release_date, vote_average, popularity, genre_ids, tmdb_payload
              )
              VALUES (
-                :tmdb_id, :title, :original_title, :overview, :poster_path, :backdrop_path,
+                :tmdb_id, :media_type, :title, :original_title, :overview, :poster_path, :backdrop_path,
                 :release_date, :vote_average, :popularity, CAST(:genre_ids AS jsonb), CAST(:tmdb_payload AS jsonb)
              )
-             ON CONFLICT (tmdb_id)
+             ON CONFLICT (tmdb_id, media_type)
              DO UPDATE SET
                 title = EXCLUDED.title,
                 original_title = EXCLUDED.original_title,
@@ -100,14 +102,14 @@ class MovieRepository
 
         $statement = $this->pdo->prepare(
             'INSERT INTO movies (
-                tmdb_id, title, original_title, overview, poster_path, backdrop_path,
+                tmdb_id, media_type, title, original_title, overview, poster_path, backdrop_path,
                 release_date, runtime, vote_average, popularity, genres, tmdb_payload, has_details
              )
              VALUES (
-                :tmdb_id, :title, :original_title, :overview, :poster_path, :backdrop_path,
+                :tmdb_id, :media_type, :title, :original_title, :overview, :poster_path, :backdrop_path,
                 :release_date, :runtime, :vote_average, :popularity, CAST(:genres AS jsonb), CAST(:tmdb_payload AS jsonb), TRUE
              )
-             ON CONFLICT (tmdb_id)
+             ON CONFLICT (tmdb_id, media_type)
              DO UPDATE SET
                 title = EXCLUDED.title,
                 original_title = EXCLUDED.original_title,
@@ -133,6 +135,101 @@ class MovieRepository
             $this->saveMovieSummary($movie);
         }
     }
+
+    // ── TV details ───────────────────────────────────────────
+
+    public function getTvDetails(int $tmdbId): ?array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT tmdb_payload FROM movies
+             WHERE tmdb_id = :tmdb_id AND media_type = \'tv\' AND has_details = TRUE'
+        );
+        $statement->execute(['tmdb_id' => $tmdbId]);
+
+        $tv = $statement->fetchColumn();
+
+        return $tv ? json_decode($tv, true) : null;
+    }
+
+    public function saveTvSummary(array $tv): void
+    {
+        if (!isset($tv['id'])) {
+            return;
+        }
+
+        $statement = $this->pdo->prepare(
+            'INSERT INTO movies (
+                tmdb_id, media_type, title, original_title, overview, poster_path, backdrop_path,
+                release_date, vote_average, popularity, genre_ids, tmdb_payload
+             )
+             VALUES (
+                :tmdb_id, :media_type, :title, :original_title, :overview, :poster_path, :backdrop_path,
+                :release_date, :vote_average, :popularity, CAST(:genre_ids AS jsonb), CAST(:tmdb_payload AS jsonb)
+             )
+             ON CONFLICT (tmdb_id, media_type)
+             DO UPDATE SET
+                title = EXCLUDED.title,
+                original_title = EXCLUDED.original_title,
+                overview = EXCLUDED.overview,
+                poster_path = EXCLUDED.poster_path,
+                backdrop_path = EXCLUDED.backdrop_path,
+                release_date = EXCLUDED.release_date,
+                vote_average = EXCLUDED.vote_average,
+                popularity = EXCLUDED.popularity,
+                genre_ids = EXCLUDED.genre_ids,
+                tmdb_payload = CASE
+                    WHEN movies.has_details THEN movies.tmdb_payload
+                    ELSE EXCLUDED.tmdb_payload
+                END,
+                updated_at = NOW()'
+        );
+
+        $statement->execute($this->tvSummaryParams($tv));
+    }
+
+    public function saveTvDetails(array $tv): void
+    {
+        if (!isset($tv['id'])) {
+            return;
+        }
+
+        $statement = $this->pdo->prepare(
+            'INSERT INTO movies (
+                tmdb_id, media_type, title, original_title, overview, poster_path, backdrop_path,
+                release_date, runtime, vote_average, popularity, genres, tmdb_payload, has_details
+             )
+             VALUES (
+                :tmdb_id, :media_type, :title, :original_title, :overview, :poster_path, :backdrop_path,
+                :release_date, :runtime, :vote_average, :popularity, CAST(:genres AS jsonb), CAST(:tmdb_payload AS jsonb), TRUE
+             )
+             ON CONFLICT (tmdb_id, media_type)
+             DO UPDATE SET
+                title = EXCLUDED.title,
+                original_title = EXCLUDED.original_title,
+                overview = EXCLUDED.overview,
+                poster_path = EXCLUDED.poster_path,
+                backdrop_path = EXCLUDED.backdrop_path,
+                release_date = EXCLUDED.release_date,
+                runtime = EXCLUDED.runtime,
+                vote_average = EXCLUDED.vote_average,
+                popularity = EXCLUDED.popularity,
+                genres = EXCLUDED.genres,
+                tmdb_payload = EXCLUDED.tmdb_payload,
+                has_details = TRUE,
+                updated_at = NOW()'
+        );
+
+        $statement->execute($this->tvDetailsParams($tv));
+    }
+
+    public function saveTvSummaries(array $tvShows): void
+    {
+        foreach ($tvShows as $tv) {
+            $this->saveTvSummary($tv);
+        }
+    }
+
+    // ── Private helpers ──────────────────────────────────────
 
     private function movieSummaryParams(array $movie): array
     {
@@ -161,6 +258,7 @@ class MovieRepository
 
         return [
             'tmdb_id' => (int) $movie['id'],
+            'media_type' => 'movie',
             'title' => $movie['title'] ?? null,
             'original_title' => $movie['original_title'] ?? null,
             'overview' => $movie['overview'] ?? null,
@@ -170,6 +268,46 @@ class MovieRepository
             'vote_average' => $movie['vote_average'] ?? null,
             'popularity' => $movie['popularity'] ?? null,
             'tmdb_payload' => json_encode($movie, JSON_UNESCAPED_UNICODE),
+        ];
+    }
+
+    private function tvSummaryParams(array $tv): array
+    {
+        $params = $this->tvBaseParams($tv);
+        $params['genre_ids'] = json_encode($tv['genre_ids'] ?? [], JSON_UNESCAPED_UNICODE);
+
+        return $params;
+    }
+
+    private function tvDetailsParams(array $tv): array
+    {
+        $params = $this->tvBaseParams($tv);
+        $params['runtime'] = $tv['episode_run_time'][0] ?? null;
+        $params['genres'] = json_encode($tv['genres'] ?? [], JSON_UNESCAPED_UNICODE);
+
+        return $params;
+    }
+
+    private function tvBaseParams(array $tv): array
+    {
+        $firstAirDate = $tv['first_air_date'] ?? null;
+
+        if ($firstAirDate === '') {
+            $firstAirDate = null;
+        }
+
+        return [
+            'tmdb_id' => (int) $tv['id'],
+            'media_type' => 'tv',
+            'title' => $tv['name'] ?? null,
+            'original_title' => $tv['original_name'] ?? null,
+            'overview' => $tv['overview'] ?? null,
+            'poster_path' => $tv['poster_path'] ?? null,
+            'backdrop_path' => $tv['backdrop_path'] ?? null,
+            'release_date' => $firstAirDate,
+            'vote_average' => $tv['vote_average'] ?? null,
+            'popularity' => $tv['popularity'] ?? null,
+            'tmdb_payload' => json_encode($tv, JSON_UNESCAPED_UNICODE),
         ];
     }
 }
