@@ -1,30 +1,52 @@
 // Сервис для взаимодействия с API
 
-const API_BASE = "http://138.124.240.208:8000/api";
+import axios from "axios";
 
-async function request(endpoint) {
-  const response = await fetch(
-    `${API_BASE}/${endpoint}`
-  );
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
-  if (!response.ok) {
-    throw new Error("API Error");
-  }
+const api = axios.create({
+  baseURL: `${API_BASE_URL}/api`,
+  timeout: 10000,
+});
 
-  return response.json();
+async function request(endpoint, params = {}) {
+  const response = await api.get(endpoint, { params });
+  return response.data;
 }
 
+// -- Movies --
+
 export const getTrendingMovies = () =>
-  request("trending.php");
+  request("/trending");
 
 export const getPopularMovies = () =>
-  request("movies.php");
+  request("/movies");
 
 export const getNowPlayingMovies = () =>
-  request("now-playing.php");
+  request("/now-playing");
 
 export const getUpcomingMovies = () =>
-  request("upcoming.php");
+  request("/upcoming");
 
 export const getMovie = (id) =>
-  request(`movie.php?id=${id}`);
+  request("/movie", { id });
+
+// -- TV Shows --
+
+export const getTrendingTv = () =>
+  request("/tv/trending");
+
+export const getPopularTv = () =>
+  request("/tv/popular");
+
+export const getOnTheAirTv = () =>
+  request("/tv/on-the-air");
+
+export const getAiringTodayTv = () =>
+  request("/tv/airing-today");
+
+export const getTvShow = (id) =>
+  request("/tv-shows", { id });
+
+export const getTvSeason = (seriesId, seasonNumber) =>
+  request("/tv-shows/season", { series_id: seriesId, season_number: seasonNumber });

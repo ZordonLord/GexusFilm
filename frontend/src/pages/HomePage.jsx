@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 
 import Sidebar from "../components/Sidebar";
-import MovieRow from "../components/MovieRow";
+import MediaRow from "../components/MediaRow";
+
 import "../styles/HomePage.css";
 
 import {
@@ -11,64 +12,122 @@ import {
   getPopularMovies,
   getNowPlayingMovies,
   getUpcomingMovies,
+  getTrendingTv,
+  getPopularTv,
+  getOnTheAirTv,
+  getAiringTodayTv,
 } from "../services/api";
 
 export default function HomePage() {
-  const [trending, setTrending] = useState([]);
-  const [popular, setPopular] = useState([]);
+  const [trendingMovies, setTrendingMovies] = useState([]);
+  const [popularMovies, setPopularMovies] = useState([]);
   const [nowPlaying, setNowPlaying] = useState([]);
   const [upcoming, setUpcoming] = useState([]);
+  const [trendingTv, setTrendingTv] = useState([]);
+  const [popularTv, setPopularTv] = useState([]);
+  const [onTheAir, setOnTheAir] = useState([]);
+  const [airingToday, setAiringToday] = useState([]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let cancelled = false;
 
-  async function loadData() {
-    try {
-      const [
-        trendingData,
-        popularData,
-        nowPlayingData,
-        upcomingData,
-      ] = await Promise.all([
-        getTrendingMovies(),
-        getPopularMovies(),
-        getNowPlayingMovies(),
-        getUpcomingMovies(),
-      ]);
+    async function loadData() {
+      try {
+        const [
+          trendingMoviesData,
+          popularMoviesData,
+          nowPlayingData,
+          upcomingData,
+          trendingTvData,
+          popularTvData,
+          onTheAirData,
+          airingTodayData,
+        ] = await Promise.all([
+          getTrendingMovies(),
+          getPopularMovies(),
+          getNowPlayingMovies(),
+          getUpcomingMovies(),
+          getTrendingTv(),
+          getPopularTv(),
+          getOnTheAirTv(),
+          getAiringTodayTv(),
+        ]);
 
-      setTrending(trendingData.results || []);
-      setPopular(popularData.results || []);
-      setNowPlaying(nowPlayingData.results || []);
-      setUpcoming(upcomingData.results || []);
-    } catch (error) {
-      console.error(error);
+        if (cancelled) {
+          return;
+        }
+
+        setTrendingMovies(trendingMoviesData.results || []);
+        setPopularMovies(popularMoviesData.results || []);
+        setNowPlaying(nowPlayingData.results || []);
+        setUpcoming(upcomingData.results || []);
+        setTrendingTv(trendingTvData.results || []);
+        setPopularTv(popularTvData.results || []);
+        setOnTheAir(onTheAirData.results || []);
+        setAiringToday(airingTodayData.results || []);
+      } catch (error) {
+        console.error(error);
+      }
     }
-  }
+
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="app-layout">
       <Sidebar />
 
       <main className="content">
-        <MovieRow
-          title="🔥 Сейчас смотрят"
-          movies={trending}
+        <MediaRow
+          title="Сейчас смотрят"
+          items={trendingMovies}
+          mediaType="movie"
         />
 
-        <MovieRow
-          title="🎬 Популярное"
-          movies={popular}
+        <MediaRow
+          title="Популярное"
+          items={popularMovies}
+          mediaType="movie"
         />
 
-        <MovieRow
-          title="🍿 Сейчас в кино"
-          movies={nowPlaying}
+        <MediaRow
+          title="Сейчас в кино"
+          items={nowPlaying}
+          mediaType="movie"
         />
 
-        <MovieRow
-          title="🚀 Скоро выйдут"
-          movies={upcoming}
+        <MediaRow
+          title="Скоро выйдут"
+          items={upcoming}
+          mediaType="movie"
+        />
+
+        <MediaRow
+          title="Трендовые сериалы"
+          items={trendingTv}
+          mediaType="tv"
+        />
+
+        <MediaRow
+          title="Популярные сериалы"
+          items={popularTv}
+          mediaType="tv"
+        />
+
+        <MediaRow
+          title="Сериалы в эфире"
+          items={onTheAir}
+          mediaType="tv"
+        />
+
+        <MediaRow
+          title="Сериалы сегодня"
+          items={airingToday}
+          mediaType="tv"
         />
       </main>
     </div>
