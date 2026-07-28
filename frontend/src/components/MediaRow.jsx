@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 
 import MediaCard from "./MediaCard";
+import SkeletonCard from "./SkeletonCard";
 
 import "../styles/MediaRow.css";
 
@@ -84,28 +85,28 @@ export default function MediaRow({
         </div>
       </div>
 
-      {loading ? (
-        <p>Загрузка...</p>
-      ) : (
+      <div
+        className={`row-wrapper
+        ${!canLeft ? "hide-left" : ""}
+        ${!canRight ? "hide-right" : ""}`}
+      >
         <div
-          className={`row-wrapper
-          ${!canLeft ? "hide-left" : ""}
-          ${!canRight ? "hide-right" : ""}`}
+          className="row"
+          ref={rowRef}
         >
-          <div
-            className="row"
-            ref={rowRef}
-          >
-            {items.map((item) => (
-              <MediaCard
-                key={`${item.media_type || mediaType}-${item.id}`}
-                item={item}
-                mediaType={mediaType}
-              />
-            ))}
-          </div>
+          {loading
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <SkeletonCard key={`skeleton-${i}`} />
+              ))
+            : items.map((item) => (
+                <MediaCard
+                  key={`${item.media_type || mediaType}-${item.id}`}
+                  item={item}
+                  mediaType={mediaType}
+                />
+              ))}
         </div>
-      )}
+      </div>
 
     </section>
   );

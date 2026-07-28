@@ -151,6 +151,24 @@
   text-overflow: ellipsis;
 }
 
+/* Скелетон-текст в карточке */
+.skeleton-text {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%);
+  background-size: 200% 200%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  margin-bottom: 8px;
+}
+
+.skeleton-text--short {
+  width: 40%;
+}
+
+.skeleton-text--long {
+  width: 80%;
+}
+
 /* Адаптив */
 @media (max-width: 768px) {
   .media-card-link {
