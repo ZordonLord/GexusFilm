@@ -34,17 +34,19 @@ export default function MediaCard({
     >
       <article className="media-card">
 
-        {!loaded && (
-          <div className="media-card__skeleton" />
-        )}
+        <div className="media-card__poster-wrapper">
+          {!loaded && (
+            <div className="media-card__skeleton" />
+          )}
 
-        <img
-          src={poster}
-          alt={title}
-          loading="lazy"
-          className={`media-card__poster ${loaded ? "loaded" : ""}`}
-          onLoad={() => setLoaded(true)}
-        />
+          <img
+            src={poster}
+            alt={title}
+            loading="lazy"
+            className={`media-card__poster ${loaded ? "loaded" : ""}`}
+            onLoad={() => setLoaded(true)}
+          />
+        </div>
 
         <div className="media-card__overlay">
           <button

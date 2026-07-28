@@ -29,9 +29,18 @@
   outline-offset: 2px;
 }
 
-/* Скелетон загрузки */
-.media-card__skeleton {
+/* Обёртка постера — задаёт высоту через aspect-ratio */
+.media-card__poster-wrapper {
+  position: relative;
+  width: 100%;
   aspect-ratio: 2/3;
+  overflow: hidden;
+}
+
+/* Скелетон загрузки — поверх постера, не влияет на высоту */
+.media-card__skeleton {
+  position: absolute;
+  inset: 0;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%);
   background-size: 200% 200%;
   animation: shimmer 1.5s ease-in-out infinite;
@@ -46,7 +55,7 @@
 /* Постер */
 .media-card__poster {
   width: 100%;
-  aspect-ratio: 2/3;
+  height: 100%;
   object-fit: cover;
   display: block;
   transition: opacity 0.3s ease;
