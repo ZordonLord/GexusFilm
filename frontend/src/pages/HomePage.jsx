@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 
 import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import Hero from "../components/Hero";
 import MediaRow from "../components/MediaRow";
-
-import "../styles/HomePage.css";
 
 import {
   getTrendingMovies,
@@ -27,6 +28,7 @@ export default function HomePage() {
   const [popularTv, setPopularTv] = useState([]);
   const [onTheAir, setOnTheAir] = useState([]);
   const [airingToday, setAiringToday] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +69,8 @@ export default function HomePage() {
         setAiringToday(airingTodayData.results || []);
       } catch (error) {
         console.error(error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -78,57 +82,70 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="app-layout">
+    <div className="flex min-h-screen bg-[var(--bg)]">
       <Sidebar />
 
-      <main className="content">
-        <MediaRow
-          title="Сейчас смотрят"
-          items={trendingMovies}
-          mediaType="movie"
-        />
+      <main className="flex-1 ml-[var(--sidebar-width)] min-w-0">
+        {/* Верхняя панель с поиском и авторизацией */}
+        <Header />
 
-        <MediaRow
-          title="Популярное"
-          items={popularMovies}
-          mediaType="movie"
-        />
+        {/* Hero-секция с трендовыми фильмами */}
+        <Hero items={trendingMovies} mediaType="movie" />
 
-        <MediaRow
-          title="Сейчас в кино"
-          items={nowPlaying}
-          mediaType="movie"
-        />
+        {/* Контентные ряды */}
+        <div className="relative z-10 -mt-16 space-y-6 pb-12">
+          <MediaRow
+            title="Популярное"
+            items={popularMovies}
+            mediaType="movie"
+            loading={loading}
+          />
 
-        <MediaRow
-          title="Скоро выйдут"
-          items={upcoming}
-          mediaType="movie"
-        />
+          <MediaRow
+            title="Сейчас в кино"
+            items={nowPlaying}
+            mediaType="movie"
+            loading={loading}
+          />
 
-        <MediaRow
-          title="Трендовые сериалы"
-          items={trendingTv}
-          mediaType="tv"
-        />
+          <MediaRow
+            title="Скоро выйдут"
+            items={upcoming}
+            mediaType="movie"
+            loading={loading}
+          />
 
-        <MediaRow
-          title="Популярные сериалы"
-          items={popularTv}
-          mediaType="tv"
-        />
+          <MediaRow
+            title="Трендовые сериалы"
+            items={trendingTv}
+            mediaType="tv"
+            loading={loading}
+          />
 
-        <MediaRow
-          title="Сериалы в эфире"
-          items={onTheAir}
-          mediaType="tv"
-        />
+          <MediaRow
+            title="Популярные сериалы"
+            items={popularTv}
+            mediaType="tv"
+            loading={loading}
+          />
 
-        <MediaRow
-          title="Сериалы сегодня"
-          items={airingToday}
-          mediaType="tv"
-        />
+          <MediaRow
+            title="Сериалы в эфире"
+            items={onTheAir}
+            mediaType="tv"
+            loading={loading}
+          />
+
+          <MediaRow
+            title="Сериалы сегодня"
+            items={airingToday}
+            mediaType="tv"
+            loading={loading}
+          />
+        </div>
+
+        {/* Подвал */}
+        <Footer />
       </main>
     </div>
   );

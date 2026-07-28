@@ -1,127 +1,114 @@
+/* MediaRow — Tailwind-совместимые стили для карусели */
+
 .media-section {
-  margin-bottom: 56px;
+  padding: 0 48px;
 }
 
 .media-section__header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-.media-section h2 {
-  margin: 0;
-  font-size: 2rem;
+.media-section__header h2 {
+  font-size: 1.375rem;
   font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
 }
 
-.row {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.row::-webkit-scrollbar {
-  height: 8px;
-}
-
-.row::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 999px;
-}
-
-.row::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-}
-
-.row::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
-}
-
-.row {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.05);
-}
-
+/* Обёртка для кнопок прокрутки */
 .media-row__controls {
   display: flex;
-  gap: 10px;
-  position: relative;
-  z-index: 2;
+  gap: 8px;
 }
 
 .row-btn {
-  width: 42px;
-  height: 42px;
-  border: none;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: #1c2536;
-  color: white;
-  font-size: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 16px;
   cursor: pointer;
-  transition: .25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
 }
 
 .row-btn:hover {
-  background: var(--primary);
-  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .row-btn.disabled {
-  opacity: .3;
+  opacity: 0.2;
+  cursor: default;
   pointer-events: none;
 }
 
+/* Контейнер с градиентными масками по краям */
 .row-wrapper {
   position: relative;
-  width: 100%;
-  overflow: hidden;
-}
-
-.row-wrapper::before,
-.row-wrapper::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 70px;
-  pointer-events: none;
-  z-index: 5;
-  transition: opacity .3s ease;
-}
-
-.row-wrapper::before {
-  left: 0;
-  background: linear-gradient(
+  mask-image: linear-gradient(
     to right,
-    var(--bg) 0%,
-    rgba(2, 8, 23, .85) 30%,
-    rgba(2, 8, 23, 0) 100%
+    transparent 0%,
+    black 24px,
+    black calc(100% - 24px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 24px,
+    black calc(100% - 24px),
+    transparent 100%
   );
 }
 
-.row-wrapper::after {
-  right: 0;
-  background: linear-gradient(
-    to left,
-    var(--bg) 0%,
-    rgba(2, 8, 23, .85) 30%,
-    rgba(2, 8, 23, 0) 100%
-  );
+/* Горизонтальный скролл-контейнер */
+.row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 8px 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.row-wrapper.hide-left::before {
-  opacity: 0;
+.row::-webkit-scrollbar {
+  display: none;
 }
 
-.row-wrapper.hide-right::after {
-  opacity: 0;
+/* Адаптив */
+@media (max-width: 768px) {
+  .media-section {
+    padding: 0 16px;
+  }
+
+  .media-section__header h2 {
+    font-size: 1.125rem;
+  }
+
+  .row-wrapper {
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 12px,
+      black calc(100% - 12px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 12px,
+      black calc(100% - 12px),
+      transparent 100%
+    );
+  }
 }
