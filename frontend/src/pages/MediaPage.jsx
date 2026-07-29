@@ -5,8 +5,8 @@ import { useParams } from "react-router-dom";
 
 import { getMovie, getTvShow } from "../services/api";
 
-import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import MediaHero from "../components/MediaHero";
 import SeasonList from "../components/SeasonList";
@@ -44,52 +44,60 @@ export default function MediaPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-[var(--bg)]">
-        <Sidebar />
-        <main className="flex-1 ml-[var(--sidebar-width)] min-w-0 flex items-center justify-center">
-          <div className="media-loading">Загрузка...</div>
-        </main>
+      <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+        <Header />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main className="flex-1 min-w-0 flex items-center justify-center">
+            <div className="media-loading">Загрузка...</div>
+          </main>
+        </div>
       </div>
     );
   }
 
   if (!media) {
     return (
-      <div className="flex min-h-screen bg-[var(--bg)]">
-        <Sidebar />
-        <main className="flex-1 ml-[var(--sidebar-width)] min-w-0 flex items-center justify-center">
-          <div className="media-loading">Не найдено</div>
-        </main>
+      <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+        <Header />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main className="flex-1 min-w-0 flex items-center justify-center">
+            <div className="media-loading">Не найдено</div>
+          </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg)]">
-      <Sidebar />
+    <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+      <Header />
 
-      <main className="flex-1 ml-[var(--sidebar-width)] min-w-0 flex flex-col">
-        <Header />
+      <div className="flex flex-1">
+        <Sidebar />
 
-        <div
-          className="media-page flex-1 flex flex-col"
-          style={{
-            backgroundImage:
-              `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
-          }}
-        >
-          <MediaHero media={media} />
+        <main className="flex-1 min-w-0 flex flex-col">
+          <div
+            className="media-page flex-1 flex flex-col"
+            style={{
+              backgroundImage:
+                `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
+            }}
+          >
+            <MediaHero media={media} />
 
-          {type === "tv" && (
-            <SeasonList
-              seriesId={media.id}
-              seasons={media.seasons || []}
-            />
-          )}
-        </div>
+            {type === "tv" && (
+              <SeasonList
+                seriesId={media.id}
+                seasons={media.seasons || []}
+              />
+            )}
+          </div>
 
-        <Footer />
-      </main>
+          <Footer />
+        </main>
+      </div>
     </div>
   );
 }

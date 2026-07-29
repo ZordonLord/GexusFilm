@@ -1,7 +1,7 @@
-// Верхняя панель с поиском и кнопкой авторизации
+// Верхняя панель с логотипом, поиском и кнопкой авторизации
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Header() {
   const [query, setQuery] = useState("");
@@ -17,11 +17,16 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-20 w-full h-16 flex items-center justify-between gap-4 px-6 border-b border-white/[0.06] bg-[var(--bg)]/80 backdrop-blur-xl">
-      {/* Левая часть — заголовок (опционально) */}
-      <div className="flex items-center gap-3 min-w-0">
-        <h2 className="text-lg font-semibold text-white/80 hidden sm:block truncate">
-          GexusFilm
-        </h2>
+      {/* Левая часть — логотип */}
+      <div className="flex items-center gap-3 min-w-0 shrink-0">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">G</span>
+          </div>
+          <span className="text-lg font-bold text-white tracking-tight">
+            Gexus<span className="text-blue-400">Film</span>
+          </span>
+        </Link>
       </div>
 
       {/* Поиск — по центру / растягивается */}

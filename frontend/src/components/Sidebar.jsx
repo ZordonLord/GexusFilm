@@ -14,21 +14,9 @@ export default function Sidebar() {
   const location = useLocation();
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-[var(--sidebar-width)] bg-[#0a0f1e] border-r border-white/[0.06] flex flex-col z-30">
-      {/* Logo */}
-      <div className="px-6 pt-6 pb-8">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">G</span>
-          </div>
-          <span className="text-lg font-bold text-white tracking-tight">
-            Gexus<span className="text-blue-400">Film</span>
-          </span>
-        </Link>
-      </div>
-
+    <aside className="w-[var(--sidebar-width)] bg-[#0a0f1e] border-r border-white/[0.06] flex flex-col shrink-0">
       {/* Navigation */}
-      <nav className="flex-1 px-3">
+      <nav className="flex-1 px-3 pt-4">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;

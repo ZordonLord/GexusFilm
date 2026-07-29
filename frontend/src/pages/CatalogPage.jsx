@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import MediaCard from "../components/MediaCard";
 import SkeletonCard from "../components/SkeletonCard";
@@ -145,122 +145,124 @@ export default function CatalogPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg)]">
-      <Sidebar />
+    <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+      <Header />
 
-      <main className="flex-1 ml-[var(--sidebar-width)] min-w-0 flex flex-col">
-        <Header />
+      <div className="flex flex-1">
+        <Sidebar />
 
-        <div className="catalog-page">
-          {/* Заголовок */}
-          <div className="catalog-page__header">
-            <h1 className="catalog-page__title">Каталог</h1>
-            <p className="catalog-page__subtitle">
-              Все фильмы и сериалы в одном месте
-            </p>
-          </div>
-
-          {/* Фильтры — тип медиа */}
-          <div className="catalog-page__filters">
-            <div className="catalog-page__tabs">
-              {MEDIA_TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => handleMediaTypeChange(tab.key)}
-                  className={`catalog-page__tab ${
-                    mediaType === tab.key ? "catalog-page__tab--active" : ""
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+        <main className="flex-1 min-w-0 flex flex-col">
+          <div className="catalog-page">
+            {/* Заголовок */}
+            <div className="catalog-page__header">
+              <h1 className="catalog-page__title">Каталог</h1>
+              <p className="catalog-page__subtitle">
+                Все фильмы и сериалы в одном месте
+              </p>
             </div>
 
-            {/* Фильтр по жанрам */}
-            <div className="catalog-page__genres">
-              <button
-                onClick={() => handleGenreChange(null)}
-                className={`catalog-page__genre ${
-                  selectedGenre === null ? "catalog-page__genre--active" : ""
-                }`}
-              >
-                Все жанры
-              </button>
-              {genres.map((genre) => (
+            {/* Фильтры — тип медиа */}
+            <div className="catalog-page__filters">
+              <div className="catalog-page__tabs">
+                {MEDIA_TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleMediaTypeChange(tab.key)}
+                    className={`catalog-page__tab ${
+                      mediaType === tab.key ? "catalog-page__tab--active" : ""
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Фильтр по жанрам */}
+              <div className="catalog-page__genres">
                 <button
-                  key={genre.id}
-                  onClick={() => handleGenreChange(genre.id)}
+                  onClick={() => handleGenreChange(null)}
                   className={`catalog-page__genre ${
-                    selectedGenre === genre.id ? "catalog-page__genre--active" : ""
+                    selectedGenre === null ? "catalog-page__genre--active" : ""
                   }`}
                 >
-                  {genre.name}
+                  Все жанры
                 </button>
-              ))}
+                {genres.map((genre) => (
+                  <button
+                    key={genre.id}
+                    onClick={() => handleGenreChange(genre.id)}
+                    className={`catalog-page__genre ${
+                      selectedGenre === genre.id ? "catalog-page__genre--active" : ""
+                    }`}
+                  >
+                    {genre.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Сетка карточек */}
-          <div className="catalog-page__grid">
-            {loading
-              ? Array.from({ length: 12 }).map((_, i) => (
-                  <SkeletonCard key={`skeleton-${i}`} />
-                ))
-              : items.length > 0
-                ? items.map((item) => (
-                    <MediaCard
-                      key={`${item.media_type || mediaType}-${item.id}`}
-                      item={item}
-                      mediaType={item.media_type || mediaType}
-                    />
+            {/* Сетка карточек */}
+            <div className="catalog-page__grid">
+              {loading
+                ? Array.from({ length: 12 }).map((_, i) => (
+                    <SkeletonCard key={`skeleton-${i}`} />
                   ))
-                : (
-                  <div className="catalog-page__empty">
-                    <svg className="catalog-page__empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <p className="catalog-page__empty-text">Ничего не найдено</p>
-                    <p className="catalog-page__empty-hint">Попробуйте изменить фильтры</p>
-                  </div>
-                )}
+                : items.length > 0
+                  ? items.map((item) => (
+                      <MediaCard
+                        key={`${item.media_type || mediaType}-${item.id}`}
+                        item={item}
+                        mediaType={item.media_type || mediaType}
+                      />
+                    ))
+                  : (
+                    <div className="catalog-page__empty">
+                      <svg className="catalog-page__empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <p className="catalog-page__empty-text">Ничего не найдено</p>
+                      <p className="catalog-page__empty-hint">Попробуйте изменить фильтры</p>
+                    </div>
+                  )}
+            </div>
+
+            {/* Пагинация */}
+            {!loading && items.length > 0 && (
+              <div className="catalog-page__pagination">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={page <= 1}
+                  className="catalog-page__page-btn"
+                  aria-label="Предыдущая страница"
+                >
+                  <svg className="catalog-page__page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Назад
+                </button>
+
+                <span className="catalog-page__page-info">
+                  Страница {page} из {totalPages}
+                </span>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={page >= totalPages}
+                  className="catalog-page__page-btn"
+                  aria-label="Следующая страница"
+                >
+                  Вперёд
+                  <svg className="catalog-page__page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Пагинация */}
-          {!loading && items.length > 0 && (
-            <div className="catalog-page__pagination">
-              <button
-                onClick={handlePrevPage}
-                disabled={page <= 1}
-                className="catalog-page__page-btn"
-                aria-label="Предыдущая страница"
-              >
-                <svg className="catalog-page__page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Назад
-              </button>
-
-              <span className="catalog-page__page-info">
-                Страница {page} из {totalPages}
-              </span>
-
-              <button
-                onClick={handleNextPage}
-                disabled={page >= totalPages}
-                className="catalog-page__page-btn"
-                aria-label="Следующая страница"
-              >
-                Вперёд
-                <svg className="catalog-page__page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-          )}
-        </div>
-
-        <Footer />
-      </main>
+          <Footer />
+        </main>
+      </div>
     </div>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import Hero from "../components/Hero";
 import MediaRow from "../components/MediaRow";
@@ -82,71 +82,74 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg)]">
-      <Sidebar />
+    <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+      {/* Header на всю ширину сверху */}
+      <Header />
 
-      <main className="flex-1 ml-[var(--sidebar-width)] min-w-0">
-        {/* Верхняя панель с поиском и авторизацией */}
-        <Header />
+      {/* Под header — sidebar и контент */}
+      <div className="flex flex-1">
+        <Sidebar />
 
-        {/* Hero-секция с трендовыми фильмами */}
-        <Hero items={trendingMovies} mediaType="movie" />
+        <main className="flex-1 min-w-0 flex flex-col">
+          {/* Hero-секция с трендовыми фильмами */}
+          <Hero items={trendingMovies} mediaType="movie" />
 
-        {/* Контентные ряды */}
-        <div className="relative z-10 -mt-16 space-y-6 pb-12">
-          <MediaRow
-            title="Популярное"
-            items={popularMovies}
-            mediaType="movie"
-            loading={loading}
-          />
+          {/* Контентные ряды */}
+          <div className="relative z-10 -mt-16 space-y-6 pb-12">
+            <MediaRow
+              title="Популярное"
+              items={popularMovies}
+              mediaType="movie"
+              loading={loading}
+            />
 
-          <MediaRow
-            title="Сейчас в кино"
-            items={nowPlaying}
-            mediaType="movie"
-            loading={loading}
-          />
+            <MediaRow
+              title="Сейчас в кино"
+              items={nowPlaying}
+              mediaType="movie"
+              loading={loading}
+            />
 
-          <MediaRow
-            title="Скоро выйдут"
-            items={upcoming}
-            mediaType="movie"
-            loading={loading}
-          />
+            <MediaRow
+              title="Скоро выйдут"
+              items={upcoming}
+              mediaType="movie"
+              loading={loading}
+            />
 
-          <MediaRow
-            title="Трендовые сериалы"
-            items={trendingTv}
-            mediaType="tv"
-            loading={loading}
-          />
+            <MediaRow
+              title="Трендовые сериалы"
+              items={trendingTv}
+              mediaType="tv"
+              loading={loading}
+            />
 
-          <MediaRow
-            title="Популярные сериалы"
-            items={popularTv}
-            mediaType="tv"
-            loading={loading}
-          />
+            <MediaRow
+              title="Популярные сериалы"
+              items={popularTv}
+              mediaType="tv"
+              loading={loading}
+            />
 
-          <MediaRow
-            title="Сериалы в эфире"
-            items={onTheAir}
-            mediaType="tv"
-            loading={loading}
-          />
+            <MediaRow
+              title="Сериалы в эфире"
+              items={onTheAir}
+              mediaType="tv"
+              loading={loading}
+            />
 
-          <MediaRow
-            title="Сериалы сегодня"
-            items={airingToday}
-            mediaType="tv"
-            loading={loading}
-          />
-        </div>
+            <MediaRow
+              title="Сериалы сегодня"
+              items={airingToday}
+              mediaType="tv"
+              loading={loading}
+            />
+          </div>
 
-        {/* Подвал */}
-        <Footer />
-      </main>
+          {/* Подвал */}
+          <Footer />
+        </main>
+      </div>
     </div>
   );
 }
