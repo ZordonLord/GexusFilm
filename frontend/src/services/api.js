@@ -31,6 +31,12 @@ export const getUpcomingMovies = () =>
 export const getMovie = (id) =>
   request("/movie", { id });
 
+export const getDiscoverMovies = (params = {}) =>
+  request("/discover", params);
+
+export const getMovieGenres = () =>
+  request("/genres");
+
 // -- TV Shows --
 
 export const getTrendingTv = () =>
@@ -50,3 +56,9 @@ export const getTvShow = (id) =>
 
 export const getTvSeason = (seriesId, seasonNumber) =>
   request("/tv-shows/season", { series_id: seriesId, season_number: seasonNumber });
+
+export const getDiscoverTv = (params = {}) =>
+  request("/tv/discover", params);
+
+export const getTvGenres = () =>
+  request("/tv/genres");

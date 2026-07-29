@@ -159,8 +159,9 @@ class TvService
 
     public function discoverTv(array $params): array
     {
-        $genreId = $params['genre_id'] ?? 0;
-        $cacheKey = "discover:tv:genre:$genreId";
+        $genreId = (int) ($params['genre_id'] ?? 0);
+        $page = (int) ($params['page'] ?? 1);
+        $cacheKey = "discover:tv:genre:$genreId:page:$page";
 
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
@@ -169,10 +170,16 @@ class TvService
             }
         }
 
-        $data = $this->contentSource->discoverTv([
-            'with_genres' => $genreId,
+        $tmdbParams = [
             'sort_by' => 'popularity.desc',
-        ]);
+            'page' => $page,
+        ];
+
+        if ($genreId > 0) {
+            $tmdbParams['with_genres'] = $genreId;
+        }
+
+        $data = $this->contentSource->discoverTv($tmdbParams);
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());

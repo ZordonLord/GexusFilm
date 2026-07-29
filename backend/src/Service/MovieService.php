@@ -140,8 +140,9 @@ class MovieService
 
     public function discoverMovies(array $params): array
     {
-        $genreId = $params['genre_id'] ?? 0;
-        $cacheKey = "discover:genre:$genreId";
+        $genreId = (int) ($params['genre_id'] ?? 0);
+        $page = (int) ($params['page'] ?? 1);
+        $cacheKey = "discover:genre:$genreId:page:$page";
 
         if ($this->repository) {
             $cached = $this->repository->getCachedResponse($cacheKey);
@@ -150,10 +151,16 @@ class MovieService
             }
         }
 
-        $data = $this->contentSource->discoverMovies([
-            'with_genres' => $genreId,
+        $tmdbParams = [
             'sort_by' => 'popularity.desc',
-        ]);
+            'page' => $page,
+        ];
+
+        if ($genreId > 0) {
+            $tmdbParams['with_genres'] = $genreId;
+        }
+
+        $data = $this->contentSource->discoverMovies($tmdbParams);
 
         if ($this->repository) {
             $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());

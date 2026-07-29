@@ -55,12 +55,6 @@ class MovieController
 
     public function discover(array $params): array
     {
-        $genreId = $params['genre_id'] ?? 0;
-
-        if ($genreId <= 0) {
-            throw new \InvalidArgumentException('genre_id is required');
-        }
-
         return $this->movieService->discoverMovies($params);
     }
 

@@ -54,6 +54,7 @@ function createRouter(): Router
     $router->get('/api/discover', static function () use ($movieController): void {
         $params = [
             'genre_id' => (int) ($_GET['genre_id'] ?? 0),
+            'page' => (int) ($_GET['page'] ?? 1),
         ];
         $data = $movieController->discover($params);
         json_response($data);
@@ -114,6 +115,7 @@ function createRouter(): Router
     $router->get('/api/tv/discover', static function () use ($tvController): void {
         $params = [
             'genre_id' => (int) ($_GET['genre_id'] ?? 0),
+            'page' => (int) ($_GET['page'] ?? 1),
         ];
         $data = $tvController->discover($params);
         json_response($data);
