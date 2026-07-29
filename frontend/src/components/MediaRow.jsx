@@ -85,11 +85,33 @@ export default function MediaRow({
         </div>
       </div>
 
-      <div
-        className={`row-wrapper
-        ${!canLeft ? "hide-left" : ""}
-        ${!canRight ? "hide-right" : ""}`}
-      >
+      <div className="row-wrapper">
+        {/* Оверлей слева — затемнение + стрелка */}
+        {canLeft && (
+          <button
+            className="row-overlay row-overlay--left"
+            onClick={() => scroll(-1)}
+            aria-label="Прокрутить влево"
+          >
+            <svg className="row-overlay__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Оверлей справа — затемнение + стрелка */}
+        {canRight && (
+          <button
+            className="row-overlay row-overlay--right"
+            onClick={() => scroll(1)}
+            aria-label="Прокрутить вправо"
+          >
+            <svg className="row-overlay__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+
         <div
           className="row"
           ref={rowRef}
