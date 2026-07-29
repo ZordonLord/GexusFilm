@@ -5,6 +5,9 @@ import { useParams } from "react-router-dom";
 
 import { getMovie, getTvShow } from "../services/api";
 
+import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import MediaHero from "../components/MediaHero";
 import SeasonList from "../components/SeasonList";
 
@@ -41,36 +44,52 @@ export default function MediaPage() {
 
   if (loading) {
     return (
-      <div className="media-loading">
-        Загрузка...
+      <div className="flex min-h-screen bg-[var(--bg)]">
+        <Sidebar />
+        <main className="flex-1 ml-[var(--sidebar-width)] min-w-0 flex items-center justify-center">
+          <div className="media-loading">Загрузка...</div>
+        </main>
       </div>
     );
   }
 
   if (!media) {
     return (
-      <div className="media-loading">
-        Не найдено
+      <div className="flex min-h-screen bg-[var(--bg)]">
+        <Sidebar />
+        <main className="flex-1 ml-[var(--sidebar-width)] min-w-0 flex items-center justify-center">
+          <div className="media-loading">Не найдено</div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div
-      className="media-page"
-      style={{
-        backgroundImage:
-          `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
-      }}
-    >
-      <MediaHero media={media} />
+    <div className="flex min-h-screen bg-[var(--bg)]">
+      <Sidebar />
 
-      {type === "tv" && (
-        <SeasonList
-          seriesId={media.id}
-          seasons={media.seasons || []}
-        />
-      )}
+      <main className="flex-1 ml-[var(--sidebar-width)] min-w-0 flex flex-col">
+        <Header />
+
+        <div
+          className="media-page flex-1 flex flex-col"
+          style={{
+            backgroundImage:
+              `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
+          }}
+        >
+          <MediaHero media={media} />
+
+          {type === "tv" && (
+            <SeasonList
+              seriesId={media.id}
+              seasons={media.seasons || []}
+            />
+          )}
+        </div>
+
+        <Footer />
+      </main>
     </div>
   );
 }
