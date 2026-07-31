@@ -17,22 +17,22 @@ async function request(endpoint, params = {}) {
 // -- Movies --
 
 export const getTrendingMovies = () =>
-  request("/trending");
+  request("/movies/trending");
 
 export const getPopularMovies = () =>
-  request("/movies");
+  request("/movies/popular");
 
 export const getNowPlayingMovies = () =>
-  request("/now-playing");
+  request("/movies/now-playing");
 
 export const getUpcomingMovies = () =>
-  request("/upcoming");
+  request("/movies/upcoming");
 
 export const getMovie = (id) =>
-  request("/movie", { id });
+  request(`/movies/${id}`);
 
 export const getDiscoverMovies = (params = {}) =>
-  request("/discover", params);
+  request("/discover", { ...params, type: "movie" });
 
 export const getMovieGenres = () =>
   request("/genres");
@@ -40,25 +40,25 @@ export const getMovieGenres = () =>
 // -- TV Shows --
 
 export const getTrendingTv = () =>
-  request("/tv/trending");
+  request("/tv-shows/trending");
 
 export const getPopularTv = () =>
-  request("/tv/popular");
+  request("/tv-shows/popular");
 
 export const getOnTheAirTv = () =>
-  request("/tv/on-the-air");
+  request("/tv-shows/on-the-air");
 
 export const getAiringTodayTv = () =>
-  request("/tv/airing-today");
+  request("/tv-shows/airing-today");
 
 export const getTvShow = (id) =>
-  request("/tv-shows", { id });
+  request(`/tv-shows/${id}`);
 
 export const getTvSeason = (seriesId, seasonNumber) =>
-  request("/tv-shows/season", { series_id: seriesId, season_number: seasonNumber });
+  request(`/tv-shows/${seriesId}/season/${seasonNumber}`);
 
 export const getDiscoverTv = (params = {}) =>
-  request("/tv/discover", params);
+  request("/discover", { ...params, type: "tv" });
 
 export const getTvGenres = () =>
-  request("/tv/genres");
+  request("/genres", { type: "tv" });
