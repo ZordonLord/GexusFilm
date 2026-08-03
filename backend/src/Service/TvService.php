@@ -10,25 +10,24 @@ class TvService
 {
     public function __construct(
         private ContentSourceInterface $contentSource,
-        private ?MovieRepository $repository
+        private ?MovieRepository $repository,
+        private ?CacheService $cache = null
     ) {
     }
 
     public function getTrendingTv(): array
     {
-        $cacheKey = 'tv:trending:day';
+        $cacheKey = CacheKeyFactory::catalog('tv', 'trending-day');
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $data = $this->contentSource->getTrendingTvDay();
 
+        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
+
         if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
             $this->repository->saveTvSummaries($data['results'] ?? []);
         }
 
@@ -37,19 +36,17 @@ class TvService
 
     public function getPopularTv(): array
     {
-        $cacheKey = 'tv:popular';
+        $cacheKey = CacheKeyFactory::catalog('tv', 'popular');
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $data = $this->contentSource->getPopularTv();
 
+        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
+
         if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
             $this->repository->saveTvSummaries($data['results'] ?? []);
         }
 
@@ -58,19 +55,17 @@ class TvService
 
     public function getOnTheAirTv(): array
     {
-        $cacheKey = 'tv:on_the_air';
+        $cacheKey = CacheKeyFactory::catalog('tv', 'on-the-air');
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $data = $this->contentSource->getOnTheAirTv();
 
+        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
+
         if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
             $this->repository->saveTvSummaries($data['results'] ?? []);
         }
 
@@ -79,19 +74,17 @@ class TvService
 
     public function getAiringTodayTv(): array
     {
-        $cacheKey = 'tv:airing_today';
+        $cacheKey = CacheKeyFactory::catalog('tv', 'airing-today');
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $data = $this->contentSource->getAiringTodayTv();
 
+        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
+
         if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
             $this->repository->saveTvSummaries($data['results'] ?? []);
         }
 
@@ -100,9 +93,17 @@ class TvService
 
     public function getTvDetails(int $id): array
     {
+        $cacheKey = CacheKeyFactory::details('tv', $id);
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
         if ($this->repository) {
             $cached = $this->repository->getTvDetails($id);
             if ($cached) {
+                $this->cache?->put($cacheKey, $cached, cache_ttl_config()['details']);
+
                 return $cached;
             }
         }
@@ -113,44 +114,39 @@ class TvService
             $this->repository->saveTvDetails($tv);
         }
 
+        $this->saveCached($cacheKey, $tv, cache_ttl_config()['details']);
+
         return $tv;
     }
 
     public function getTvSeason(int $seriesId, int $seasonNumber): array
     {
-        $cacheKey = "tv:season:$seriesId:$seasonNumber";
+        $cacheKey = CacheKeyFactory::season($seriesId, $seasonNumber);
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $data = $this->contentSource->getTvSeason($seriesId, $seasonNumber);
 
-        if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
-        }
+        $this->saveCached($cacheKey, $data, cache_ttl_config()['details']);
 
         return $data;
     }
 
     public function searchTv(string $query): array
     {
-        $cacheKey = 'search:tv:' . mb_strtolower($query);
+        $cacheKey = CacheKeyFactory::search('tv', $query);
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $result = $this->contentSource->searchTv($query);
 
+        $this->saveCached($cacheKey, $result, cache_ttl_config()['search']);
+
         if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $result, cache_ttl_minutes());
             $this->repository->saveTvSummaries($result['results'] ?? []);
         }
 
@@ -161,13 +157,10 @@ class TvService
     {
         $genreId = (int) ($params['genre_id'] ?? 0);
         $page = (int) ($params['page'] ?? 1);
-        $cacheKey = "discover:tv:genre:$genreId:page:$page";
+        $cacheKey = CacheKeyFactory::discover('tv', $genreId, $page);
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $tmdbParams = [
@@ -181,8 +174,9 @@ class TvService
 
         $data = $this->contentSource->discoverTv($tmdbParams);
 
+        $this->saveCached($cacheKey, $data, cache_ttl_config()['discover']);
+
         if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
             $this->repository->saveTvSummaries($data['results'] ?? []);
         }
 
@@ -191,21 +185,38 @@ class TvService
 
     public function getGenres(): array
     {
-        $cacheKey = 'genres:tv';
+        $cacheKey = CacheKeyFactory::genres('tv');
 
-        if ($this->repository) {
-            $cached = $this->repository->getCachedResponse($cacheKey);
-            if ($cached) {
-                return $cached;
-            }
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
         }
 
         $data = $this->contentSource->getTvGenres();
 
-        if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, cache_ttl_minutes() * 7);
-        }
+        $this->saveCached($cacheKey, $data, cache_ttl_config()['genres']);
 
         return $data;
+    }
+
+    private function getCached(string $cacheKey): ?array
+    {
+        $cached = $this->cache?->get($cacheKey);
+
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $cached = $this->repository?->getCachedResponse($cacheKey);
+
+        return $cached;
+    }
+
+    private function saveCached(string $cacheKey, array $data, int $ttlSeconds): void
+    {
+        $this->cache?->put($cacheKey, $data, $ttlSeconds);
+
+        if ($this->repository) {
+            $this->repository->saveCachedResponse($cacheKey, $data, max(1, (int) ceil($ttlSeconds / 60)));
+        }
     }
 }

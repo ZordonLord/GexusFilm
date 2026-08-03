@@ -33,7 +33,8 @@
 - получение сезонов и эпизодов сериала;
 - поиск и discover API с параметрами типа контента, жанра и страницы;
 - единый frontend Media UI для фильмов и сериалов;
-- PostgreSQL-кэш ответов TMDB с TTL;
+- PostgreSQL-кэш ответов TMDB с TTL и Redis горячий кэш с едиными ключами/TTL;
+- Redis rate limit для публичного API с graceful degradation;
 - инфраструктура Meilisearch с persistent volume, healthcheck и индексами `media`/`people`;
 - единый front-controller и параметризованный Router;
 - Composer PSR-4 автозагрузка, PHPUnit и PHP_CodeSniffer.
@@ -62,6 +63,7 @@
 | Backend | PHP 8.1+, Composer, PSR-4, собственный Router |
 | Database | PostgreSQL 16 |
 | Search infrastructure | Meilisearch v1.37, official PHP SDK |
+| Cache and rate limit | Redis 7, Predis 2.2 |
 | External API | TMDB API через `ContentSourceInterface` и `TmdbClient` |
 | Tests | PHPUnit 11 |
 | Code quality | PHP_CodeSniffer 3.9, ESLint |
@@ -77,6 +79,7 @@ React/Vite frontend
         ▼
 public/index.php → Router → Controller → Service
                                       ├── Repository → PostgreSQL
+                                      ├── optional Redis → hot cache / rate limit
                                       └── ContentSourceInterface → TmdbClient → TMDB
                                        └── optional Meilisearch → search indexes
 ```
@@ -90,7 +93,7 @@ public/index.php → Router → Controller → Service
 - Repository работает с PostgreSQL и кэшем;
 - `ContentSourceInterface` скрывает конкретный внешний источник;
 - PostgreSQL остаётся источником истины, а Meilisearch — восстанавливаемым производным индексом;
-- недоступность Meilisearch переводит health в `degraded`, но не останавливает каталог и текущие страницы;
+- недоступность Meilisearch или Redis переводит health в `degraded`, но не останавливает каталог;
 - публичные endpoints проектируются под сценарии GexusFilm, а не копируют структуру TMDB;
 - один endpoint может агрегировать несколько запросов источника в единый ответ.
 
@@ -108,7 +111,7 @@ public/index.php → Router → Controller → Service
 │   │   ├── TmdbClient.php         # клиент TMDB
 │   │   ├── Service/               # бизнес-логика и ContentSourceInterface
 │   │   ├── Repository/            # доступ к PostgreSQL и кэшу
-│   │   ├── Infrastructure/        # интеграции, включая Meilisearch
+│   │   ├── Infrastructure/        # интеграции Redis и Meilisearch
 │   │   └── Http/Controllers/      # HTTP-контроллеры
 │   ├── tests/                     # PHPUnit-тесты
 │   ├── database.sql               # схема PostgreSQL
@@ -123,7 +126,7 @@ public/index.php → Router → Controller → Service
 │   ├── package.json
 │   └── vite.config.js
 ├── data/                          # локальные данные проекта
-├── docker-compose.yml             # PostgreSQL и Meilisearch
+├── docker-compose.yml             # PostgreSQL, Redis и Meilisearch
 ├── .env.example                   # переменные Docker Compose
 └── README.md
 ```
@@ -172,6 +175,19 @@ DB_PASSWORD=gexusfilm-local-password
 
 CACHE_TTL_MINUTES=1440
 
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_TIMEOUT=1.0
+REDIS_CACHE_TTL_SECONDS=300
+REDIS_DETAILS_TTL_SECONDS=900
+REDIS_SEARCH_TTL_SECONDS=300
+REDIS_DISCOVER_TTL_SECONDS=300
+REDIS_GENRES_TTL_SECONDS=86400
+RATE_LIMIT_DEFAULT=120
+RATE_LIMIT_SEARCH=60
+RATE_LIMIT_WINDOW_SECONDS=60
+
 MEILISEARCH_HOST=http://127.0.0.1:7700
 MEILISEARCH_API_KEY=gexusfilm-local-master-key
 MEILISEARCH_MEDIA_INDEX=media
@@ -183,10 +199,10 @@ MEILISEARCH_PEOPLE_INDEX=people
 из примеров согласованы между собой. В production замените все пароли и ключи на секреты
 из deployment-среды; не коммитьте `.env`.
 
-### 3. Запустить PostgreSQL
+### 3. Запустить PostgreSQL, Redis и Meilisearch
 
 ```bash
-docker compose up -d postgres meilisearch
+docker compose up -d postgres redis meilisearch
 docker compose ps
 ```
 
@@ -279,7 +295,7 @@ MEILISEARCH_PEOPLE_INDEX=people
 Запустите инфраструктуру и установите зависимости:
 
 ```bash
-docker compose up -d postgres meilisearch
+docker compose up -d postgres redis meilisearch
 docker compose ps
 cd backend
 composer install --no-interaction --prefer-dist
@@ -314,6 +330,10 @@ Named volumes `gexusfilm-postgres` и `gexusfilm-meilisearch` сохраняют
 производным индексом и может быть пересоздан из PostgreSQL/TMDB на следующих этапах,
 но backup PostgreSQL и секретов всё равно должен выполняться отдельно.
 
+Redis использует named volume `gexusfilm-redis`. Его данные являются временными: при
+потере Redis каталог продолжает работать через PostgreSQL/TMDB, а rate limit временно
+переходит в fail-open до восстановления соединения.
+
 ### Диагностика и graceful degradation
 
 ```bash
@@ -323,8 +343,8 @@ curl http://127.0.0.1:7700/health
 curl http://127.0.0.1:8000/api/health
 ```
 
-Если Meilisearch остановлен или недоступен, `/api/health` возвращает `200` со статусом
-`degraded` и компонентом `meilisearch: unavailable`. Текущий каталог, TMDB и PostgreSQL
+`/api/health` возвращает `200` со статусом
+`degraded` и компонентом `meilisearch: unavailable` или `redis: unavailable`. Текущий каталог, TMDB и PostgreSQL
 не используют Meilisearch в рамках GX-10, поэтому сайт продолжает работать. Не запускайте
 initializer до восстановления сервиса; он завершится с ненулевым кодом и диагностикой.
 
@@ -366,7 +386,12 @@ initializer до восстановления сервиса; он заверш�
 | `/api/genres` | `?type=movie` или `?type=tv` | Жанры |
 | `/api/search` | `?q=matrix&type=movie` | Поиск по названию |
 | `/api/discover` | `?type=movie&genre_id=28&page=1` | Подборка по фильтрам |
-| `/api/health` | — | Состояние приложения и доступность Meilisearch |
+| `/api/health` | — | Состояние приложения и доступность Meilisearch/Redis |
+
+Для `/api/*` действует fixed-window rate limit по IP: 120 запросов в минуту для
+большинства маршрутов и 60 запросов в минуту для `/api/search` и `/api/discover`.
+`OPTIONS` и `/api/health` исключены. При превышении API возвращает `429` с кодом
+`RATE_LIMITED`, `Retry-After` и заголовками `X-RateLimit-*`.
 
 Суффикс `.php` нормализуется front-controller для обратной совместимости, но отдельные HTTP 301 redirect-маршруты не заявляются.
 
@@ -406,7 +431,7 @@ npm run build
 ### v0.3 — Поиск и фильтры
 
 1. Добавить Meilisearch для полнотекстового поиска и фасетных фильтров.
-2. Добавить Redis для горячего кэша, единых TTL/ключей и rate limit.
+2. ✅ Добавить Redis для горячего кэша, единых TTL/ключей и rate limit (GX-11).
 3. Реализовать pipeline PostgreSQL → Meilisearch с идемпотентной индексацией.
 4. Расширить Search/Discover API сортировкой, пагинацией, валидацией и единым форматом ошибок.
 5. Добавить SearchPage, debounce, URL-состояние и loading/empty/error states.

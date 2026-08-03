@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 
 use App\Router;
+use App\Response;
 
 function createRouter(): Router
 {
@@ -12,11 +13,13 @@ function createRouter(): Router
 
     $router->get('/api/health', static function (array $params): void {
         $meilisearchAvailable = meilisearch_is_healthy();
+        $redisAvailable = redis_is_healthy();
 
         json_response([
-            'status' => $meilisearchAvailable ? 'ok' : 'degraded',
+            'status' => $meilisearchAvailable && $redisAvailable ? 'ok' : 'degraded',
             'services' => [
                 'meilisearch' => $meilisearchAvailable ? 'available' : 'unavailable',
+                'redis' => $redisAvailable ? 'available' : 'unavailable',
             ],
         ], 200);
     });
