@@ -61,13 +61,25 @@ function db_config(): array
     return [
         'host' => env_value('DB_HOST', '127.0.0.1'),
         'port' => env_value('DB_PORT', '5432'),
-        'database' => env_value('DB_DATABASE', 'zordonfilm'),
-        'user' => env_value('DB_USERNAME', 'zordonfilm'),
-        'password' => env_value('DB_PASSWORD', 'zordonfilm'),
+        'database' => env_value('DB_DATABASE', 'gexusfilm'),
+        'user' => env_value('DB_USERNAME', 'gexusfilm'),
+        'password' => env_value('DB_PASSWORD', 'gexusfilm-local-password'),
     ];
 }
 
 function cache_ttl_minutes(): int
 {
     return max(1, (int) env_value('CACHE_TTL_MINUTES', '1440'));
+}
+
+function meilisearch_config(): array
+{
+    $apiKey = env_value('MEILISEARCH_API_KEY');
+
+    return [
+        'host' => rtrim(env_value('MEILISEARCH_HOST', 'http://127.0.0.1:7700'), '/'),
+        'api_key' => $apiKey === '' ? null : $apiKey,
+        'media_index' => env_value('MEILISEARCH_MEDIA_INDEX', 'media'),
+        'people_index' => env_value('MEILISEARCH_PEOPLE_INDEX', 'people'),
+    ];
 }

@@ -9,6 +9,18 @@ use App\Router;
 function createRouter(): Router
 {
     $router = new Router();
+
+    $router->get('/api/health', static function (array $params): void {
+        $meilisearchAvailable = meilisearch_is_healthy();
+
+        json_response([
+            'status' => $meilisearchAvailable ? 'ok' : 'degraded',
+            'services' => [
+                'meilisearch' => $meilisearchAvailable ? 'available' : 'unavailable',
+            ],
+        ], 200);
+    });
+
     $movieController = movie_controller();
     $tvController = tv_controller();
 

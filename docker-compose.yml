@@ -1,17 +1,36 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: zordonfilm-postgres
+    container_name: gexusfilm-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: zordonfilm
-      POSTGRES_USER: zordonfilm
-      POSTGRES_PASSWORD: zordonfilm
+      POSTGRES_DB: ${POSTGRES_DB:-gexusfilm}
+      POSTGRES_USER: ${POSTGRES_USER:-gexusfilm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gexusfilm-local-password}
     ports:
       - "5432:5432"
     volumes:
-      - zordonfilm-postgres:/var/lib/postgresql/data
+      - gexusfilm-postgres:/var/lib/postgresql/data
       - ./backend/database.sql:/docker-entrypoint-initdb.d/001-database.sql:ro
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.37
+    container_name: gexusfilm-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: ${MEILI_ENV:-development}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-gexusfilm-local-master-key}
+    ports:
+      - "7700:7700"
+    volumes:
+      - gexusfilm-meilisearch:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
-  zordonfilm-postgres:
+  gexusfilm-postgres:
+  gexusfilm-meilisearch:

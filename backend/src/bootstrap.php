@@ -11,6 +11,10 @@ use App\Service\MovieService;
 use App\Service\TvService;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\TvController;
+use App\Infrastructure\Meilisearch\MeilisearchClient;
+use App\Infrastructure\Meilisearch\MeilisearchGateway;
+use App\Infrastructure\Meilisearch\MeilisearchHealthChecker;
+use App\Infrastructure\Meilisearch\MeilisearchIndexManager;
 use App\Repository\MovieRepository;
 
 function movie_repository(): ?MovieRepository
@@ -49,7 +53,41 @@ function tv_controller(): TvController
     return new TvController(tv_service());
 }
 
-function json_response(array $data): void
+function meilisearch_gateway(): MeilisearchGateway
 {
-    Response::json($data);
+    static $gateway = null;
+
+    if ($gateway instanceof MeilisearchGateway) {
+        return $gateway;
+    }
+
+    $config = meilisearch_config();
+    $gateway = new MeilisearchClient($config['host'], $config['api_key']);
+
+    return $gateway;
+}
+
+function meilisearch_index_manager(): MeilisearchIndexManager
+{
+    return new MeilisearchIndexManager(
+        meilisearch_gateway(),
+        meilisearch_config()['media_index'],
+        meilisearch_config()['people_index'],
+    );
+}
+
+function meilisearch_is_healthy(): bool
+{
+    try {
+        return (new MeilisearchHealthChecker(meilisearch_gateway()))->isHealthy();
+    } catch (Throwable $exception) {
+        error_log('Meilisearch health check failed: ' . $exception->getMessage());
+
+        return false;
+    }
+}
+
+function json_response(array $data, ?int $status = null): void
+{
+    Response::json($data, $status);
 }

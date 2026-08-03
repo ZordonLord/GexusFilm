@@ -17,6 +17,7 @@
 - [Архитектура](#архитектура)
 - [Структура проекта](#структура-проекта)
 - [Быстрый запуск](#быстрый-запуск)
+- [Запуск на новом сервере](#запуск-на-новом-сервере)
 - [API](#api)
 - [Проверки](#проверки)
 - [План развития](#план-развития)
@@ -33,6 +34,7 @@
 - поиск и discover API с параметрами типа контента, жанра и страницы;
 - единый frontend Media UI для фильмов и сериалов;
 - PostgreSQL-кэш ответов TMDB с TTL;
+- инфраструктура Meilisearch с persistent volume, healthcheck и индексами `media`/`people`;
 - единый front-controller и параметризованный Router;
 - Composer PSR-4 автозагрузка, PHPUnit и PHP_CodeSniffer.
 
@@ -59,6 +61,7 @@
 | Frontend | React 19, React Router 7, Vite 8, Axios |
 | Backend | PHP 8.1+, Composer, PSR-4, собственный Router |
 | Database | PostgreSQL 16 |
+| Search infrastructure | Meilisearch v1.37, official PHP SDK |
 | External API | TMDB API через `ContentSourceInterface` и `TmdbClient` |
 | Tests | PHPUnit 11 |
 | Code quality | PHP_CodeSniffer 3.9, ESLint |
@@ -75,6 +78,7 @@ React/Vite frontend
 public/index.php → Router → Controller → Service
                                       ├── Repository → PostgreSQL
                                       └── ContentSourceInterface → TmdbClient → TMDB
+                                       └── optional Meilisearch → search indexes
 ```
 
 Основные принципы:
@@ -85,6 +89,8 @@ public/index.php → Router → Controller → Service
 - Service содержит бизнес-правила;
 - Repository работает с PostgreSQL и кэшем;
 - `ContentSourceInterface` скрывает конкретный внешний источник;
+- PostgreSQL остаётся источником истины, а Meilisearch — восстанавливаемым производным индексом;
+- недоступность Meilisearch переводит health в `degraded`, но не останавливает каталог и текущие страницы;
 - публичные endpoints проектируются под сценарии GexusFilm, а не копируют структуру TMDB;
 - один endpoint может агрегировать несколько запросов источника в единый ответ.
 
@@ -102,6 +108,7 @@ public/index.php → Router → Controller → Service
 │   │   ├── TmdbClient.php         # клиент TMDB
 │   │   ├── Service/               # бизнес-логика и ContentSourceInterface
 │   │   ├── Repository/            # доступ к PostgreSQL и кэшу
+│   │   ├── Infrastructure/        # интеграции, включая Meilisearch
 │   │   └── Http/Controllers/      # HTTP-контроллеры
 │   ├── tests/                     # PHPUnit-тесты
 │   ├── database.sql               # схема PostgreSQL
@@ -116,7 +123,8 @@ public/index.php → Router → Controller → Service
 │   ├── package.json
 │   └── vite.config.js
 ├── data/                          # локальные данные проекта
-├── docker-compose.yml             # PostgreSQL для разработки
+├── docker-compose.yml             # PostgreSQL и Meilisearch
+├── .env.example                   # переменные Docker Compose
 └── README.md
 ```
 
@@ -126,7 +134,7 @@ public/index.php → Router → Controller → Service
 
 - PHP 8.1+ с расширениями `pdo`, `pdo_pgsql`, `curl` и `mbstring`;
 - Composer 2.x;
-- Node.js 18+ и npm;
+- Node.js 20.19+ или 22.12+ и npm;
 - Docker и Docker Compose;
 - API-ключ TMDB.
 
@@ -141,41 +149,56 @@ cd GexusFilm
 
 ```bash
 cp backend/.env.example backend/.env
+cp .env.example .env
 ```
 
 В Windows PowerShell:
 
 ```powershell
 Copy-Item backend\.env.example backend\.env
+Copy-Item .env.example .env
 ```
 
-Откройте `backend/.env` и укажите как минимум `TMDB_API_KEY`. Для локального Docker Compose подходят параметры:
+Откройте оба файла окружения. В `backend/.env` укажите как минимум `TMDB_API_KEY`. Для локального Docker Compose подходят параметры:
 
 ```env
 TMDB_API_KEY=your_tmdb_api_key
 
 DB_HOST=127.0.0.1
 DB_PORT=5432
-DB_DATABASE=DATABASE
-DB_USERNAME=USERNAME
-DB_PASSWORD=PASSWORD
+DB_DATABASE=gexusfilm
+DB_USERNAME=gexusfilm
+DB_PASSWORD=gexusfilm-local-password
 
 CACHE_TTL_MINUTES=1440
+
+MEILISEARCH_HOST=http://127.0.0.1:7700
+MEILISEARCH_API_KEY=gexusfilm-local-master-key
+MEILISEARCH_MEDIA_INDEX=media
+MEILISEARCH_PEOPLE_INDEX=people
 ```
+
+В корневом `.env` задаются переменные Docker Compose: `POSTGRES_DB`, `POSTGRES_USER`,
+`POSTGRES_PASSWORD`, `MEILI_ENV` и `MEILI_MASTER_KEY`. Для локального запуска значения
+из примеров согласованы между собой. В production замените все пароли и ключи на секреты
+из deployment-среды; не коммитьте `.env`.
 
 ### 3. Запустить PostgreSQL
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres meilisearch
+docker compose ps
 ```
 
 Схема из `backend/database.sql` применяется автоматически при первом создании Docker volume.
+Индекс Meilisearch создаётся отдельной командой после установки Composer-зависимостей.
 
 ### 4. Установить PHP-зависимости и запустить API
 
 ```bash
 cd backend
 composer install
+php bin/meilisearch-init.php
 php -S 127.0.0.1:8000 -t public public/index.php
 ```
 
@@ -198,6 +221,117 @@ npm run dev
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
+
+### Проверить Meilisearch
+
+```bash
+curl http://127.0.0.1:7700/health
+php backend/bin/meilisearch-init.php
+php backend/bin/meilisearch-init.php
+curl http://127.0.0.1:8000/api/health
+```
+
+Повторный запуск initializer идемпотентен. GX-10 не индексирует документы и не меняет
+существующий `/api/search`: индексация и подключение поиска относятся к GX-12/GX-13.
+
+## Запуск на новом сервере
+
+### Требования
+
+На сервере нужны Git, Docker Engine с Compose plugin и открытый для нужного reverse proxy
+порт приложения. PHP, Composer и Node.js нужны только при запуске backend и frontend вне
+контейнеров. Meilisearch не следует публиковать в интернет напрямую.
+
+### Установка
+
+```bash
+git clone https://github.com/ZordonLord/GexusFilm.git gexusfilm
+cd gexusfilm
+cp .env.example .env
+cp backend/.env.example backend/.env
+```
+
+Заполните корневой `.env`:
+
+```env
+POSTGRES_DB=gexusfilm
+POSTGRES_USER=gexusfilm
+POSTGRES_PASSWORD=<сильный-пароль-postgresql>
+MEILI_ENV=production
+MEILI_MASTER_KEY=<случайный-ключ-длиной-не-меньше-16-байт>
+```
+
+Заполните `backend/.env` теми же значениями подключения к PostgreSQL и ключом Meilisearch:
+
+```env
+TMDB_API_KEY=<ключ-tmdb>
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=gexusfilm
+DB_USERNAME=gexusfilm
+DB_PASSWORD=<сильный-пароль-postgresql>
+MEILISEARCH_HOST=http://127.0.0.1:7700
+MEILISEARCH_API_KEY=<значение-MEILI_MASTER_KEY>
+MEILISEARCH_MEDIA_INDEX=media
+MEILISEARCH_PEOPLE_INDEX=people
+```
+
+Запустите инфраструктуру и установите зависимости:
+
+```bash
+docker compose up -d postgres meilisearch
+docker compose ps
+cd backend
+composer install --no-interaction --prefer-dist
+php bin/meilisearch-init.php
+cd ..
+```
+
+Проверки:
+
+```bash
+curl http://127.0.0.1:7700/health
+curl http://127.0.0.1:8000/api/health
+```
+
+Для PHP backend вне Docker используется `MEILISEARCH_HOST=http://127.0.0.1:7700`.
+Если backend позже будет запущен отдельным контейнером в той же Compose-сети, значение
+нужно заменить на `http://meilisearch:7700`: `127.0.0.1` внутри контейнера указывает на
+сам контейнер, а не на Meilisearch.
+
+### Перезапуск, обновление и данные
+
+```bash
+docker compose stop
+docker compose start
+docker compose pull
+docker compose up -d
+```
+
+Named volumes `gexusfilm-postgres` и `gexusfilm-meilisearch` сохраняют данные между
+перезапусками. Команда `docker compose down -v` удаляет volumes и может уничтожить
+локальные данные; не используйте её как обычный способ остановки. Meilisearch является
+производным индексом и может быть пересоздан из PostgreSQL/TMDB на следующих этапах,
+но backup PostgreSQL и секретов всё равно должен выполняться отдельно.
+
+### Диагностика и graceful degradation
+
+```bash
+docker compose ps
+docker compose logs meilisearch
+curl http://127.0.0.1:7700/health
+curl http://127.0.0.1:8000/api/health
+```
+
+Если Meilisearch остановлен или недоступен, `/api/health` возвращает `200` со статусом
+`degraded` и компонентом `meilisearch: unavailable`. Текущий каталог, TMDB и PostgreSQL
+не используют Meilisearch в рамках GX-10, поэтому сайт продолжает работать. Не запускайте
+initializer до восстановления сервиса; он завершится с ненулевым кодом и диагностикой.
+
+Если контейнер не стартует, проверьте длину `MEILI_MASTER_KEY`, занятый порт `7700`,
+права на Docker volume и совпадение `MEILISEARCH_API_KEY` с master key. В production
+закройте порт Meilisearch firewall-ом или reverse proxy, включите HTTPS для приложения и
+храните секреты в secret manager.
 
 ## API
 
@@ -232,6 +366,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 | `/api/genres` | `?type=movie` или `?type=tv` | Жанры |
 | `/api/search` | `?q=matrix&type=movie` | Поиск по названию |
 | `/api/discover` | `?type=movie&genre_id=28&page=1` | Подборка по фильтрам |
+| `/api/health` | — | Состояние приложения и доступность Meilisearch |
 
 Суффикс `.php` нормализуется front-controller для обратной совместимости, но отдельные HTTP 301 redirect-маршруты не заявляются.
 
@@ -254,6 +389,9 @@ composer test       # PHPUnit
 composer lint       # PHP_CodeSniffer
 composer lint-fix   # автоматическое исправление стиля
 ```
+
+`composer test` и `composer lint` запускаются из каталога `backend` или через
+`composer --working-dir=backend test` и `composer --working-dir=backend lint`.
 
 ### Frontend
 
@@ -294,8 +432,11 @@ AI-поиск, мульти-источник, социальные функци�
 - не добавляйте `backend/.env`, `backend/vendor/`, `frontend/node_modules/` и локальные логи в Git;
 - не размещайте TMDB API key во frontend;
 - храните секреты только в переменных окружения или секрет-хранилище deployment-среды;
-- перед production-публикацией замените тестовые пароли PostgreSQL и настройте HTTPS;
-- PostgreSQL является источником долговременных данных, а Redis и Meilisearch в будущем будут производными/временными хранилищами.
+- перед production-публикацией замените локальные пароли PostgreSQL и Meilisearch и настройте HTTPS;
+- не публикуйте master key Meilisearch во frontend или API-ответах;
+- PostgreSQL является источником долговременных данных, а Meilisearch — производным индексом;
+- остановка Meilisearch не должна ломать текущий каталог: его доступность проверяется отдельно,
+  а поисковая интеграция появится в GX-12/GX-13.
 
 ## Документация
 
