@@ -22,8 +22,14 @@ use App\Infrastructure\Redis\RedisHealthChecker;
 use App\Repository\MovieRepository;
 use App\Service\CacheService;
 use App\Service\RateLimiter;
+use App\Service\RateLimitCheckerInterface;
 use App\Service\MediaIndexPort;
 use App\Service\MediaIndexSyncService;
+use App\Infrastructure\Resilience\FileRateLimiter;
+use App\Infrastructure\Resilience\ProtectedContentSource;
+use App\Infrastructure\Resilience\CircuitBreaker;
+use App\Infrastructure\Resilience\FileRequestLimiter;
+use App\Infrastructure\Resilience\FileSingleflight;
 
 function movie_repository(): ?MovieRepository
 {
@@ -38,7 +44,34 @@ function movie_repository(): ?MovieRepository
 
 function content_source(): \App\Service\ContentSourceInterface
 {
-    return new \App\TmdbClient(tmdb_api_key());
+    static $source;
+
+    if ($source instanceof \App\Service\ContentSourceInterface) {
+        return $source;
+    }
+
+    $config = tmdb_protection_config();
+    $source = new ProtectedContentSource(
+        new \App\TmdbClient(tmdb_api_key()),
+        new FileSingleflight(
+            $config['coordination_directory'],
+            $config['singleflight_timeout_ms'],
+            $config['singleflight_result_ttl'],
+        ),
+        new FileRequestLimiter(
+            $config['coordination_directory'],
+            $config['requests_per_second'],
+            $config['max_concurrent'],
+            $config['queue_timeout_ms'],
+        ),
+        new CircuitBreaker(
+            $config['coordination_directory'],
+            $config['circuit_failure_threshold'],
+            $config['circuit_cooldown_seconds'],
+        ),
+    );
+
+    return $source;
 }
 
 function movie_service(): MovieService
@@ -163,11 +196,12 @@ function cache_service(): ?CacheService
     return $gateway === null ? null : new CacheService($gateway);
 }
 
-function rate_limiter(): ?RateLimiter
+function rate_limiter(): RateLimitCheckerInterface
 {
     $gateway = redis_gateway();
+    $fallback = new FileRateLimiter(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gexusfilm-rate-limit');
 
-    return $gateway === null ? null : new RateLimiter($gateway);
+    return $gateway === null ? $fallback : new RateLimiter($gateway, $fallback);
 }
 
 function redis_is_healthy(): bool

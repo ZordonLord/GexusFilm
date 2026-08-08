@@ -118,3 +118,20 @@ function rate_limit_config(): array
         'window_seconds' => max(1, (int) env_value('RATE_LIMIT_WINDOW_SECONDS', '60')),
     ];
 }
+
+function tmdb_protection_config(): array
+{
+    return [
+        'requests_per_second' => max(1, (int) env_value('TMDB_REQUESTS_PER_SECOND', '10')),
+        'max_concurrent' => max(1, (int) env_value('TMDB_MAX_CONCURRENT', '10')),
+        'queue_timeout_ms' => max(1, (int) env_value('TMDB_QUEUE_TIMEOUT_MS', '250')),
+        'singleflight_timeout_ms' => max(1, (int) env_value('TMDB_SINGLEFLIGHT_TIMEOUT_MS', '2000')),
+        'singleflight_result_ttl' => max(1, (int) env_value('TMDB_SINGLEFLIGHT_RESULT_TTL_SECONDS', '15')),
+        'circuit_failure_threshold' => max(1, (int) env_value('TMDB_CIRCUIT_FAILURE_THRESHOLD', '5')),
+        'circuit_cooldown_seconds' => max(1, (int) env_value('TMDB_CIRCUIT_COOLDOWN_SECONDS', '30')),
+        'coordination_directory' => env_value(
+            'TMDB_COORDINATION_DIR',
+            sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gexusfilm-tmdb',
+        ),
+    ];
+}

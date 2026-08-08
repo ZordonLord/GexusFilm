@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App;
 
 use App\Service\ContentSourceInterface;
-use Exception;
+use App\Exception\UpstreamException;
+use App\Exception\UpstreamTimeoutException;
+use JsonException;
 
 class TmdbClient implements ContentSourceInterface
 {
@@ -17,7 +19,7 @@ class TmdbClient implements ContentSourceInterface
         $this->apiKey = $apiKey;
     }
 
-    private function request(string $endpoint, array $params = [])
+    private function request(string $endpoint, array $params = []): array
     {
         $params['api_key'] = $this->apiKey;
         $params['language'] = 'ru-RU';
@@ -30,21 +32,48 @@ class TmdbClient implements ContentSourceInterface
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_FOLLOWLOCATION => true,
+            // API-ключ находится в query string, поэтому нельзя передавать его на внешний redirect.
+            CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ]);
 
         $response = curl_exec($ch);
 
         if ($response === false) {
-            throw new Exception(curl_error($ch));
+            $errorCode = curl_errno($ch);
+            curl_close($ch);
+
+            if (in_array($errorCode, [CURLE_OPERATION_TIMEDOUT, CURLE_COULDNT_CONNECT], true)) {
+                throw new UpstreamTimeoutException('TMDB request timed out.');
+            }
+
+            throw new UpstreamException('TMDB request failed.');
         }
 
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return json_decode($response, true);
+        if ($httpCode === 408 || $httpCode === 504) {
+            throw new UpstreamTimeoutException('TMDB request timed out.');
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new UpstreamException('TMDB returned an upstream error.');
+        }
+
+        try {
+            $data = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new UpstreamException('TMDB returned invalid data.', 0, $exception);
+        }
+
+        if (!is_array($data)) {
+            throw new UpstreamException('TMDB response has an invalid structure.');
+        }
+
+        return $data;
     }
 
     // -- Movies --

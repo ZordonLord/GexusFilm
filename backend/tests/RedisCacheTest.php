@@ -9,6 +9,7 @@ use App\Infrastructure\Redis\RedisHealthChecker;
 use App\Service\CacheKeyFactory;
 use App\Service\CacheService;
 use App\Service\RateLimiter;
+use App\Infrastructure\Resilience\FileRateLimiter;
 use App\Tests\Support\FailingRedisGateway;
 use App\Tests\Support\InMemoryRedisGateway;
 use PHPUnit\Framework\TestCase;
@@ -64,12 +65,22 @@ final class RedisCacheTest extends TestCase
         self::assertSame(1, $third->retryAfter);
     }
 
-    public function testRateLimiterFailsOpenWhenRedisIsUnavailable(): void
+    public function testRateLimiterUsesLocalFallbackWhenRedisIsUnavailable(): void
     {
-        $result = (new RateLimiter(new FailingRedisGateway()))->check('127.0.0.1', 'search', 60, 60);
+        $directory = sys_get_temp_dir() . '/gexusfilm-rate-test-' . bin2hex(random_bytes(4));
+        $fallback = new FileRateLimiter($directory);
+        $result = (new RateLimiter(new FailingRedisGateway(), $fallback))->check('127.0.0.1', 'search', 60, 60);
 
         self::assertTrue($result->allowed);
-        self::assertSame(60, $result->remaining);
+        self::assertSame(59, $result->remaining);
+
+        self::assertFalse(
+            (new RateLimiter(new FailingRedisGateway(), $fallback))
+                ->check('127.0.0.1', 'search', 1, 60)->allowed,
+        );
+
+        array_map('unlink', glob($directory . '/*') ?: []);
+        rmdir($directory);
     }
 
     public function testCacheKeysSeparateMediaTypesAndNormalizeSearchQuery(): void

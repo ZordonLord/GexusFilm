@@ -7,10 +7,12 @@ namespace App\Service;
 use App\Infrastructure\Redis\RedisGateway;
 use Throwable;
 
-final class RateLimiter
+final class RateLimiter implements RateLimitCheckerInterface
 {
-    public function __construct(private RedisGateway $gateway)
-    {
+    public function __construct(
+        private RedisGateway $gateway,
+        private ?RateLimitCheckerInterface $fallback = null,
+    ) {
     }
 
     public function check(string $clientId, string $bucket, int $limit, int $windowSeconds): RateLimitResult
@@ -33,8 +35,12 @@ final class RateLimiter
                 $state['count'] > $limit ? max(1, $state['ttl']) : null,
             );
         } catch (Throwable $exception) {
-            // Лимитер не должен превращать временный отказ Redis в отказ каталога.
+            // Локальный fallback сохраняет защиту API, пока распределённый Redis недоступен.
             error_log('Redis rate limit failed: ' . $exception->getMessage());
+
+            if ($this->fallback !== null) {
+                return $this->fallback->check($clientId, $bucket, $limit, $windowSeconds);
+            }
 
             return new RateLimitResult(true, $limit, $limit, $resetAt);
         }
