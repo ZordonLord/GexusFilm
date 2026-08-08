@@ -36,6 +36,27 @@ final class MeilisearchClient implements MeilisearchGateway
     }
 
     /**
+     * Передаёт документы в Meilisearch и при необходимости ждёт завершения задачи.
+     *
+     * HTTP-путь использует enqueue без ожидания, а CLI-переиндексация включает
+     * ожидание, чтобы административная команда сообщала о фактическом результате.
+     *
+     * @param list<array<string, mixed>> $documents
+     */
+    public function upsertDocuments(string $uid, array $documents, bool $waitForCompletion = false): void
+    {
+        if ($documents === []) {
+            return;
+        }
+
+        $task = $this->client->index($uid)->addDocuments($documents);
+
+        if ($waitForCompletion) {
+            $this->waitForTask($task);
+        }
+    }
+
+    /**
      * Ждёт асинхронную операцию, чтобы initializer завершался только после применения настроек.
      *
      * @param array<string, mixed> $task

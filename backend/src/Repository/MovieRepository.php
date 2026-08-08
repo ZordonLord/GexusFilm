@@ -58,10 +58,11 @@ class MovieRepository
         return $movie ? json_decode($movie, true) : null;
     }
 
-    public function saveMovieSummary(array $movie): void
+    /** @return array<string, mixed>|null */
+    public function saveMovieSummary(array $movie): ?array
     {
         if (!isset($movie['id'])) {
-            return;
+            return null;
         }
 
         $statement = $this->pdo->prepare(
@@ -88,16 +89,20 @@ class MovieRepository
                     WHEN movies.has_details THEN movies.tmdb_payload
                     ELSE EXCLUDED.tmdb_payload
                 END,
-                updated_at = NOW()'
+                 updated_at = NOW()
+             RETURNING id'
         );
 
         $statement->execute($this->movieSummaryParams($movie));
+
+        return $this->getMediaRecordById((int) $statement->fetchColumn());
     }
 
-    public function saveMovieDetails(array $movie): void
+    /** @return array<string, mixed>|null */
+    public function saveMovieDetails(array $movie): ?array
     {
         if (!isset($movie['id'])) {
-            return;
+            return null;
         }
 
         $statement = $this->pdo->prepare(
@@ -123,17 +128,29 @@ class MovieRepository
                 genres = EXCLUDED.genres,
                 tmdb_payload = EXCLUDED.tmdb_payload,
                 has_details = TRUE,
-                updated_at = NOW()'
+                 updated_at = NOW()
+             RETURNING id'
         );
 
         $statement->execute($this->movieDetailsParams($movie));
+
+        return $this->getMediaRecordById((int) $statement->fetchColumn());
     }
 
-    public function saveMovieSummaries(array $movies): void
+    /** @return list<array<string, mixed>> */
+    public function saveMovieSummaries(array $movies): array
     {
+        $saved = [];
+
         foreach ($movies as $movie) {
-            $this->saveMovieSummary($movie);
+            $record = $this->saveMovieSummary($movie);
+
+            if ($record !== null) {
+                $saved[] = $record;
+            }
         }
+
+        return $saved;
     }
 
     // ── TV details ───────────────────────────────────────────
@@ -151,10 +168,11 @@ class MovieRepository
         return $tv ? json_decode($tv, true) : null;
     }
 
-    public function saveTvSummary(array $tv): void
+    /** @return array<string, mixed>|null */
+    public function saveTvSummary(array $tv): ?array
     {
         if (!isset($tv['id'])) {
-            return;
+            return null;
         }
 
         $statement = $this->pdo->prepare(
@@ -181,16 +199,20 @@ class MovieRepository
                     WHEN movies.has_details THEN movies.tmdb_payload
                     ELSE EXCLUDED.tmdb_payload
                 END,
-                updated_at = NOW()'
+                 updated_at = NOW()
+             RETURNING id'
         );
 
         $statement->execute($this->tvSummaryParams($tv));
+
+        return $this->getMediaRecordById((int) $statement->fetchColumn());
     }
 
-    public function saveTvDetails(array $tv): void
+    /** @return array<string, mixed>|null */
+    public function saveTvDetails(array $tv): ?array
     {
         if (!isset($tv['id'])) {
-            return;
+            return null;
         }
 
         $statement = $this->pdo->prepare(
@@ -216,17 +238,66 @@ class MovieRepository
                 genres = EXCLUDED.genres,
                 tmdb_payload = EXCLUDED.tmdb_payload,
                 has_details = TRUE,
-                updated_at = NOW()'
+                 updated_at = NOW()
+             RETURNING id'
         );
 
         $statement->execute($this->tvDetailsParams($tv));
+
+        return $this->getMediaRecordById((int) $statement->fetchColumn());
     }
 
-    public function saveTvSummaries(array $tvShows): void
+    /** @return list<array<string, mixed>> */
+    public function saveTvSummaries(array $tvShows): array
     {
+        $saved = [];
+
         foreach ($tvShows as $tv) {
-            $this->saveTvSummary($tv);
+            $record = $this->saveTvSummary($tv);
+
+            if ($record !== null) {
+                $saved[] = $record;
+            }
         }
+
+        return $saved;
+    }
+
+    /**
+     * Возвращает записи для полной переиндексации в стабильном порядке.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getMediaRecordsBatch(int $afterId = 0, int $limit = 100): array
+    {
+        $limit = min(500, max(1, $limit));
+        $statement = $this->pdo->prepare(
+            'SELECT
+                id,
+                \'tmdb\' AS source,
+                tmdb_id AS source_id,
+                media_type,
+                title,
+                original_title,
+                overview,
+                release_date,
+                vote_average,
+                popularity,
+                genre_ids,
+                genres
+             FROM movies
+             WHERE id > :after_id
+             ORDER BY id ASC
+             LIMIT :limit'
+        );
+        $statement->bindValue(':after_id', $afterId, PDO::PARAM_INT);
+        $statement->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $statement->execute();
+
+        return array_map(
+            fn (array $record): array => $this->decodeMediaRecord($record),
+            $statement->fetchAll(),
+        );
     }
 
     // ── Private helpers ──────────────────────────────────────
@@ -309,5 +380,43 @@ class MovieRepository
             'popularity' => $tv['popularity'] ?? null,
             'tmdb_payload' => json_encode($tv, JSON_UNESCAPED_UNICODE),
         ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function getMediaRecordById(int $id): ?array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT
+                id,
+                \'tmdb\' AS source,
+                tmdb_id AS source_id,
+                media_type,
+                title,
+                original_title,
+                overview,
+                release_date,
+                vote_average,
+                popularity,
+                genre_ids,
+                genres
+             FROM movies
+             WHERE id = :id'
+        );
+        $statement->execute(['id' => $id]);
+        $record = $statement->fetch();
+
+        return $record === false ? null : $this->decodeMediaRecord($record);
+    }
+
+    /** @param array<string, mixed> $record @return array<string, mixed> */
+    private function decodeMediaRecord(array $record): array
+    {
+        foreach (['genre_ids', 'genres'] as $field) {
+            if (is_string($record[$field] ?? null)) {
+                $record[$field] = json_decode($record[$field], true) ?? [];
+            }
+        }
+
+        return $record;
     }
 }

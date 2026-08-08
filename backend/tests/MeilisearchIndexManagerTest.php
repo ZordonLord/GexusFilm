@@ -29,6 +29,10 @@ final class MeilisearchIndexManagerTest extends TestCase
                     'settings' => $settings,
                 ];
             }
+
+            public function upsertDocuments(string $uid, array $documents, bool $waitForCompletion = false): void
+            {
+            }
         };
         $manager = new MeilisearchIndexManager($gateway, 'media', 'people');
 

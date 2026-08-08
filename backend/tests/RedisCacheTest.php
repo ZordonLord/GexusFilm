@@ -27,6 +27,17 @@ final class RedisCacheTest extends TestCase
         self::assertSame(300, $gateway->lastTtl);
     }
 
+    public function testCacheServicePromotesPersistentValueToRedis(): void
+    {
+        $gateway = new InMemoryRedisGateway();
+        $cache = new CacheService($gateway);
+        $value = ['results' => [['id' => 7]]];
+
+        self::assertSame($value, $cache->promote('cache:promotion', $value, 120));
+        self::assertSame($value, $cache->get('cache:promotion'));
+        self::assertSame(120, $gateway->lastTtl);
+    }
+
     public function testCacheServiceFailsOpenWhenRedisIsUnavailable(): void
     {
         $cache = new CacheService(new FailingRedisGateway());

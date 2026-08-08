@@ -40,4 +40,15 @@ final class CacheService
             error_log('Redis cache write failed: ' . $exception->getMessage());
         }
     }
+
+    /**
+     * Продвигает значение из долговременного кэша в Redis.
+     * Ошибка Redis намеренно не влияет на основной ответ каталога.
+     */
+    public function promote(string $key, array $value, int $ttlSeconds): array
+    {
+        $this->put($key, $value, $ttlSeconds);
+
+        return $value;
+    }
 }

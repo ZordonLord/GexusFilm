@@ -15,12 +15,15 @@ use App\Infrastructure\Meilisearch\MeilisearchClient;
 use App\Infrastructure\Meilisearch\MeilisearchGateway;
 use App\Infrastructure\Meilisearch\MeilisearchHealthChecker;
 use App\Infrastructure\Meilisearch\MeilisearchIndexManager;
+use App\Infrastructure\Meilisearch\MediaDocumentFactory;
 use App\Infrastructure\Redis\RedisClient;
 use App\Infrastructure\Redis\RedisGateway;
 use App\Infrastructure\Redis\RedisHealthChecker;
 use App\Repository\MovieRepository;
 use App\Service\CacheService;
 use App\Service\RateLimiter;
+use App\Service\MediaIndexPort;
+use App\Service\MediaIndexSyncService;
 
 function movie_repository(): ?MovieRepository
 {
@@ -40,7 +43,7 @@ function content_source(): \App\Service\ContentSourceInterface
 
 function movie_service(): MovieService
 {
-    return new MovieService(content_source(), movie_repository(), cache_service());
+    return new MovieService(content_source(), movie_repository(), cache_service(), media_index_port());
 }
 
 function movie_controller(): MovieController
@@ -50,7 +53,7 @@ function movie_controller(): MovieController
 
 function tv_service(): TvService
 {
-    return new TvService(content_source(), movie_repository(), cache_service());
+    return new TvService(content_source(), movie_repository(), cache_service(), media_index_port());
 }
 
 function tv_controller(): TvController
@@ -78,6 +81,34 @@ function meilisearch_index_manager(): MeilisearchIndexManager
         meilisearch_gateway(),
         meilisearch_config()['media_index'],
         meilisearch_config()['people_index'],
+    );
+}
+
+function media_index_port(): ?MediaIndexPort
+{
+    try {
+        $config = meilisearch_config();
+
+        return new MediaIndexSyncService(
+            meilisearch_gateway(),
+            new MediaDocumentFactory(),
+            $config['media_index'],
+        );
+    } catch (Throwable $exception) {
+        error_log('Media index initialization failed: ' . $exception->getMessage());
+
+        return null;
+    }
+}
+
+function media_index_sync_service(): MediaIndexSyncService
+{
+    $config = meilisearch_config();
+
+    return new MediaIndexSyncService(
+        meilisearch_gateway(),
+        new MediaDocumentFactory(),
+        $config['media_index'],
     );
 }
 

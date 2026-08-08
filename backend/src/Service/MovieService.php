@@ -11,7 +11,8 @@ class MovieService
     public function __construct(
         private ContentSourceInterface $contentSource,
         private ?MovieRepository $repository,
-        private ?CacheService $cache = null
+        private ?CacheService $cache = null,
+        private ?MediaIndexPort $mediaIndex = null,
     ) {
     }
 
@@ -19,7 +20,7 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::catalog('movie', 'trending-day');
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
             return $cached;
         }
 
@@ -27,9 +28,7 @@ class MovieService
 
         $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
 
-        if ($this->repository) {
-            $this->repository->saveMovieSummaries($data['results'] ?? []);
-        }
+        $this->scheduleIndex($this->repository?->saveMovieSummaries($data['results'] ?? []) ?? []);
 
         return $data;
     }
@@ -38,7 +37,7 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::catalog('movie', 'popular');
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
             return $cached;
         }
 
@@ -46,9 +45,7 @@ class MovieService
 
         $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
 
-        if ($this->repository) {
-            $this->repository->saveMovieSummaries($data['results'] ?? []);
-        }
+        $this->scheduleIndex($this->repository?->saveMovieSummaries($data['results'] ?? []) ?? []);
 
         return $data;
     }
@@ -57,7 +54,7 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::catalog('movie', 'now-playing');
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
             return $cached;
         }
 
@@ -65,9 +62,7 @@ class MovieService
 
         $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
 
-        if ($this->repository) {
-            $this->repository->saveMovieSummaries($data['results'] ?? []);
-        }
+        $this->scheduleIndex($this->repository?->saveMovieSummaries($data['results'] ?? []) ?? []);
 
         return $data;
     }
@@ -76,7 +71,7 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::catalog('movie', 'upcoming');
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
             return $cached;
         }
 
@@ -84,9 +79,7 @@ class MovieService
 
         $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
 
-        if ($this->repository) {
-            $this->repository->saveMovieSummaries($data['results'] ?? []);
-        }
+        $this->scheduleIndex($this->repository?->saveMovieSummaries($data['results'] ?? []) ?? []);
 
         return $data;
     }
@@ -95,24 +88,20 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::details('movie', $id);
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['details'])) !== null) {
             return $cached;
         }
 
         if ($this->repository) {
             $cached = $this->repository->getMovieDetails($id);
             if ($cached) {
-                $this->cache?->put($cacheKey, $cached, cache_ttl_config()['details']);
-
-                return $cached;
+                return $this->cache?->promote($cacheKey, $cached, cache_ttl_config()['details']) ?? $cached;
             }
         }
 
         $movie = $this->contentSource->getMovie($id);
 
-        if ($this->repository) {
-            $this->repository->saveMovieDetails($movie);
-        }
+        $this->scheduleIndex([$this->repository?->saveMovieDetails($movie)]);
 
         $this->saveCached($cacheKey, $movie, cache_ttl_config()['details']);
 
@@ -123,7 +112,7 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::search('movie', $query);
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['search'])) !== null) {
             return $cached;
         }
 
@@ -131,9 +120,7 @@ class MovieService
 
         $this->saveCached($cacheKey, $result, cache_ttl_config()['search']);
 
-        if ($this->repository) {
-            $this->repository->saveMovieSummaries($result['results'] ?? []);
-        }
+        $this->scheduleIndex($this->repository?->saveMovieSummaries($result['results'] ?? []) ?? []);
 
         return $result;
     }
@@ -144,7 +131,7 @@ class MovieService
         $page = (int) ($params['page'] ?? 1);
         $cacheKey = CacheKeyFactory::discover('movie', $genreId, $page);
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['discover'])) !== null) {
             return $cached;
         }
 
@@ -161,9 +148,7 @@ class MovieService
 
         $this->saveCached($cacheKey, $data, cache_ttl_config()['discover']);
 
-        if ($this->repository) {
-            $this->repository->saveMovieSummaries($data['results'] ?? []);
-        }
+        $this->scheduleIndex($this->repository?->saveMovieSummaries($data['results'] ?? []) ?? []);
 
         return $data;
     }
@@ -172,7 +157,7 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::genres('movie');
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['genres'])) !== null) {
             return $cached;
         }
 
@@ -183,7 +168,7 @@ class MovieService
         return $data;
     }
 
-    private function getCached(string $cacheKey): ?array
+    private function getCached(string $cacheKey, int $ttlSeconds): ?array
     {
         $cached = $this->cache?->get($cacheKey);
 
@@ -193,7 +178,18 @@ class MovieService
 
         $cached = $this->repository?->getCachedResponse($cacheKey);
 
+        if ($cached !== null) {
+            return $this->cache?->promote($cacheKey, $cached, $ttlSeconds) ?? $cached;
+        }
+
         return $cached;
+    }
+
+    /** @param list<array<string, mixed>|null> $records */
+    private function scheduleIndex(array $records): void
+    {
+        $records = array_values(array_filter($records));
+        $this->mediaIndex?->scheduleSavedMedia($records);
     }
 
     private function saveCached(string $cacheKey, array $data, int $ttlSeconds): void

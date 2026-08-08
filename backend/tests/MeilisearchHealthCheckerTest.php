@@ -22,6 +22,10 @@ final class MeilisearchHealthCheckerTest extends TestCase
             public function ensureIndex(string $uid, string $primaryKey, array $settings): void
             {
             }
+
+            public function upsertDocuments(string $uid, array $documents, bool $waitForCompletion = false): void
+            {
+            }
         };
 
         self::assertFalse((new MeilisearchHealthChecker($gateway))->isHealthy());
@@ -36,6 +40,10 @@ final class MeilisearchHealthCheckerTest extends TestCase
             }
 
             public function ensureIndex(string $uid, string $primaryKey, array $settings): void
+            {
+            }
+
+            public function upsertDocuments(string $uid, array $documents, bool $waitForCompletion = false): void
             {
             }
         };

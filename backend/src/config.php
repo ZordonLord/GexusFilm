@@ -83,6 +83,7 @@ function meilisearch_config(): array
         'api_key' => $apiKey === '' ? null : $apiKey,
         'media_index' => env_value('MEILISEARCH_MEDIA_INDEX', 'media'),
         'people_index' => env_value('MEILISEARCH_PEOPLE_INDEX', 'people'),
+        'reindex_batch_size' => min(500, max(1, (int) env_value('MEILISEARCH_REINDEX_BATCH_SIZE', '100'))),
     ];
 }
 
