@@ -34,6 +34,9 @@ export const getMovie = (id) =>
 export const getDiscoverMovies = (params = {}) =>
   request("/discover", { ...params, type: "movie" });
 
+export const getSearch = (query, params = {}) =>
+  request("/search", { ...params, q: query });
+
 export const getMovieGenres = () =>
   request("/genres");
 
