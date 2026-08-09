@@ -264,6 +264,28 @@ class MovieRepository
     }
 
     /**
+     * Ищет сохранённые записи медиа. Сортировка выбирается только из allowlist.
+     *
+     * @param array<string, mixed> $criteria
+     * @return array{page: int, results: list<array<string, mixed>>, total_pages: int, total_results: int}
+     */
+    public function searchMedia(string $query, array $criteria): array
+    {
+        return $this->queryMedia($query, $criteria);
+    }
+
+    /**
+     * Выполняет discover по сохранённому каталогу.
+     *
+     * @param array<string, mixed> $criteria
+     * @return array{page: int, results: list<array<string, mixed>>, total_pages: int, total_results: int}
+     */
+    public function discoverMedia(array $criteria): array
+    {
+        return $this->queryMedia(null, $criteria);
+    }
+
+    /**
      * Возвращает записи для полной переиндексации в стабильном порядке.
      *
      * @return list<array<string, mixed>>
@@ -280,6 +302,8 @@ class MovieRepository
                 title,
                 original_title,
                 overview,
+                poster_path,
+                backdrop_path,
                 release_date,
                 vote_average,
                 popularity,
@@ -394,6 +418,8 @@ class MovieRepository
                 title,
                 original_title,
                 overview,
+                poster_path,
+                backdrop_path,
                 release_date,
                 vote_average,
                 popularity,
@@ -418,5 +444,95 @@ class MovieRepository
         }
 
         return $record;
+    }
+
+    /**
+     * @param string|null $query
+     * @param array<string, mixed> $criteria
+     * @return array{page: int, results: list<array<string, mixed>>, total_pages: int, total_results: int}
+     */
+    private function queryMedia(?string $query, array $criteria): array
+    {
+        $where = ['media_type = :media_type'];
+        $params = ['media_type' => $criteria['type']];
+
+        if ($query !== null) {
+            $where[] = '(title ILIKE :query_title OR original_title ILIKE :query_original)';
+            $params['query_title'] = '%' . $query . '%';
+            $params['query_original'] = '%' . $query . '%';
+        }
+
+        if (isset($criteria['genre_id'])) {
+            $where[] = "genre_ids @> CAST(:genre_ids AS jsonb)";
+            $params['genre_ids'] = json_encode([(int) $criteria['genre_id']], JSON_THROW_ON_ERROR);
+        }
+
+        if (isset($criteria['year'])) {
+            $where[] = 'release_date >= :year_start AND release_date < :year_end';
+            $params['year_start'] = sprintf('%d-01-01', $criteria['year']);
+            $params['year_end'] = sprintf('%d-01-01', $criteria['year'] + 1);
+        }
+
+        if (isset($criteria['min_rating'])) {
+            $where[] = 'vote_average >= :min_rating';
+            $params['min_rating'] = $criteria['min_rating'];
+        }
+
+        $sortMap = [
+            'popularity.desc' => 'popularity DESC NULLS LAST',
+            'popularity.asc' => 'popularity ASC NULLS LAST',
+            'vote_average.desc' => 'vote_average DESC NULLS LAST',
+            'vote_average.asc' => 'vote_average ASC NULLS LAST',
+            'year.desc' => 'release_date DESC NULLS LAST',
+            'year.asc' => 'release_date ASC NULLS LAST',
+        ];
+        $sort = $sortMap[$criteria['sort_by'] ?? 'popularity.desc'];
+        $page = (int) $criteria['page'];
+        $perPage = (int) $criteria['per_page'];
+        $offset = ($page - 1) * $perPage;
+
+        $countStatement = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM movies WHERE ' . implode(' AND ', $where),
+        );
+        $countStatement->execute($params);
+        $total = (int) $countStatement->fetchColumn();
+
+        $statement = $this->pdo->prepare(
+            'SELECT
+                tmdb_id AS source_id,
+                media_type,
+                title,
+                original_title,
+                overview,
+                poster_path,
+                backdrop_path,
+                release_date,
+                vote_average,
+                popularity,
+                genre_ids,
+                genres
+             FROM movies
+             WHERE ' . implode(' AND ', $where) . '
+             ORDER BY ' . $sort . '
+             LIMIT :limit OFFSET :offset',
+        );
+        foreach ($params as $name => $value) {
+            $statement->bindValue(':' . $name, $value);
+        }
+        $statement->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $statement->execute();
+
+        $results = array_map(
+            fn (array $record): array => $this->decodeMediaRecord($record),
+            $statement->fetchAll(),
+        );
+
+        return [
+            'page' => $page,
+            'results' => $results,
+            'total_pages' => $total === 0 ? 0 : (int) ceil($total / $perPage),
+            'total_results' => $total,
+        ];
     }
 }

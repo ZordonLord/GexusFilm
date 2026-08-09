@@ -33,6 +33,11 @@ final class MeilisearchIndexManagerTest extends TestCase
             public function upsertDocuments(string $uid, array $documents, bool $waitForCompletion = false): void
             {
             }
+
+            public function search(string $uid, ?string $query, array $parameters = []): array
+            {
+                return [];
+            }
         };
         $manager = new MeilisearchIndexManager($gateway, 'media', 'people');
 

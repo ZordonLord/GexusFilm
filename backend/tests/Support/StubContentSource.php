@@ -55,7 +55,7 @@ final class StubContentSource implements ContentSourceInterface
         ];
     }
 
-    public function search(string $query): array
+    public function search(string $query, array $params = []): array
     {
         return $this->listResponse([['id' => 6, 'title' => 'Result for ' . $query]]);
     }
@@ -110,7 +110,7 @@ final class StubContentSource implements ContentSourceInterface
         ];
     }
 
-    public function searchTv(string $query): array
+    public function searchTv(string $query, array $params = []): array
     {
         return $this->listResponse([['id' => 14, 'name' => 'TV Result for ' . $query]]);
     }

@@ -28,6 +28,21 @@ final class CacheKeyFactory
         return 'cache:search:' . $mediaType . ':' . hash('sha256', $normalizedQuery);
     }
 
+    /**
+     * Формирует ключ по полному набору параметров, чтобы фильтры не смешивали ответы.
+     *
+     * @param array<string, mixed> $criteria
+     */
+    public static function searchQuery(string $operation, array $criteria): string
+    {
+        ksort($criteria);
+
+        return 'cache:' . $operation . ':' . hash(
+            'sha256',
+            json_encode($criteria, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+        );
+    }
+
     public static function discover(string $mediaType, int $genreId, int $page): string
     {
         return "cache:discover:$mediaType:genre:$genreId:page:$page";

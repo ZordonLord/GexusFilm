@@ -25,6 +25,9 @@ use App\Service\RateLimiter;
 use App\Service\RateLimitCheckerInterface;
 use App\Service\MediaIndexPort;
 use App\Service\MediaIndexSyncService;
+use App\Service\SearchService;
+use App\Repository\SearchRepository;
+use App\Http\Controllers\SearchController;
 use App\Infrastructure\Resilience\FileRateLimiter;
 use App\Infrastructure\Resilience\ProtectedContentSource;
 use App\Infrastructure\Resilience\CircuitBreaker;
@@ -92,6 +95,33 @@ function tv_service(): TvService
 function tv_controller(): TvController
 {
     return new TvController(tv_service());
+}
+
+function search_repository(): SearchRepository
+{
+    $config = meilisearch_config();
+
+    return new SearchRepository(
+        movie_repository(),
+        meilisearch_gateway(),
+        $config['media_index'],
+    );
+}
+
+function search_service(): SearchService
+{
+    return new SearchService(
+        content_source(),
+        search_repository(),
+        movie_repository(),
+        cache_service(),
+        media_index_port(),
+    );
+}
+
+function search_controller(): SearchController
+{
+    return new SearchController(search_service());
 }
 
 function meilisearch_gateway(): MeilisearchGateway

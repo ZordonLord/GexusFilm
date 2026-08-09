@@ -26,6 +26,11 @@ final class MeilisearchHealthCheckerTest extends TestCase
             public function upsertDocuments(string $uid, array $documents, bool $waitForCompletion = false): void
             {
             }
+
+            public function search(string $uid, ?string $query, array $parameters = []): array
+            {
+                return [];
+            }
         };
 
         self::assertFalse((new MeilisearchHealthChecker($gateway))->isHealthy());
@@ -45,6 +50,11 @@ final class MeilisearchHealthCheckerTest extends TestCase
 
             public function upsertDocuments(string $uid, array $documents, bool $waitForCompletion = false): void
             {
+            }
+
+            public function search(string $uid, ?string $query, array $parameters = []): array
+            {
+                return [];
             }
         };
 

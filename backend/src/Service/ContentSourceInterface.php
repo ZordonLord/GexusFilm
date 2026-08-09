@@ -52,7 +52,7 @@ interface ContentSourceInterface
     /**
      * Поиск фильмов по текстовому запросу.
      */
-    public function search(string $query): array;
+    public function search(string $query, array $params = []): array;
 
     // -- TV Shows --
 
@@ -94,7 +94,7 @@ interface ContentSourceInterface
     /**
      * Поиск сериалов по текстовому запросу.
      */
-    public function searchTv(string $query): array;
+    public function searchTv(string $query, array $params = []): array;
 
     /**
      * Поиск сериалов по параметрам (discover).

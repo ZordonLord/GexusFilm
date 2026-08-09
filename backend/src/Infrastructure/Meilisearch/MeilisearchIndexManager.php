@@ -21,6 +21,7 @@ final class MeilisearchIndexManager
             [
                 'searchableAttributes' => ['title', 'original_title', 'overview'],
                 'filterableAttributes' => ['media_type', 'genres', 'year', 'vote_average'],
+                'sortableAttributes' => ['popularity', 'vote_average', 'year'],
             ],
         );
 

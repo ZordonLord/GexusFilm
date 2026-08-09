@@ -26,6 +26,7 @@ function createRouter(): Router
 
     $movieController = movie_controller();
     $tvController = tv_controller();
+    $searchController = search_controller();
 
     // ═══════════════════════════════════════════════════════════════
     //  НОВЫЕ REST-маршруты (целевое состояние)
@@ -140,34 +141,13 @@ function createRouter(): Router
     });
 
     // Поиск: ?q=запрос&type=movie|tv
-    $router->get('/api/search', static function (array $params) use ($movieController, $tvController): void {
-        $query = $params['q'] ?? '';
-        $type = $params['type'] ?? 'movie';
-
-        if ($type === 'tv') {
-            $data = $tvController->search($query);
-        } else {
-            $data = $movieController->search($query);
-        }
-
-        json_response($data);
+    $router->get('/api/search', static function (array $params) use ($searchController): void {
+        json_response($searchController->search($params));
     });
 
     // Discover (подборка): ?type=movie|tv&genre_id=&page=
-    $router->get('/api/discover', static function (array $params) use ($movieController, $tvController): void {
-        $type = $params['type'] ?? 'movie';
-        $discoverParams = [
-            'genre_id' => (int) ($params['genre_id'] ?? 0),
-            'page'     => (int) ($params['page'] ?? 1),
-        ];
-
-        if ($type === 'tv') {
-            $data = $tvController->discover($discoverParams);
-        } else {
-            $data = $movieController->discover($discoverParams);
-        }
-
-        json_response($data);
+    $router->get('/api/discover', static function (array $params) use ($searchController): void {
+        json_response($searchController->discover($params));
     });
 
     return $router;

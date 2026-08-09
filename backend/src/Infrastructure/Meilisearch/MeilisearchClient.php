@@ -56,6 +56,11 @@ final class MeilisearchClient implements MeilisearchGateway
         }
     }
 
+    public function search(string $uid, ?string $query, array $parameters = []): array
+    {
+        return $this->client->index($uid)->rawSearch($query, $parameters);
+    }
+
     /**
      * Ждёт асинхронную операцию, чтобы initializer завершался только после применения настроек.
      *

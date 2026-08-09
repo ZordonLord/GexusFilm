@@ -113,11 +113,9 @@ class TmdbClient implements ContentSourceInterface
         return $this->request("/movie/$id");
     }
 
-    public function search(string $query): array
+    public function search(string $query, array $params = []): array
     {
-        return $this->request('/search/movie', [
-            'query' => $query
-        ]);
+        return $this->request('/search/movie', array_merge(['query' => $query], $params));
     }
 
     // -- TV Shows --
@@ -157,11 +155,9 @@ class TmdbClient implements ContentSourceInterface
         return $this->request("/tv/$seriesId/season/$seasonNumber");
     }
 
-    public function searchTv(string $query): array
+    public function searchTv(string $query, array $params = []): array
     {
-        return $this->request('/search/tv', [
-            'query' => $query
-        ]);
+        return $this->request('/search/tv', array_merge(['query' => $query], $params));
     }
 
     public function discoverTv(array $params = []): array

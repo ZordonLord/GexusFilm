@@ -7,6 +7,7 @@ namespace App\Http;
 use App\Exception\ServiceUnavailableException;
 use App\Exception\UpstreamException;
 use App\Exception\UpstreamTimeoutException;
+use App\Exception\ValidationException;
 use Throwable;
 use InvalidArgumentException;
 
@@ -16,12 +17,29 @@ class ExceptionHandler
     {
         error_log('Exception caught: ' . $exception::class . ' in ' . $exception->getFile() . ':' . $exception->getLine());
 
+        if ($exception instanceof ValidationException) {
+            http_response_code(400);
+            $error = [
+                'code' => 'VALIDATION_ERROR',
+                'message' => 'Параметры запроса некорректны',
+            ];
+
+            if ($exception->details !== []) {
+                $error['details'] = $exception->details;
+            }
+
+            self::jsonResponse([
+                'error' => $error,
+            ]);
+            return;
+        }
+
         if ($exception instanceof InvalidArgumentException) {
             http_response_code(400);
             self::jsonResponse([
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
-                    'message' => $exception->getMessage(),
+                    'message' => 'Параметры запроса некорректны',
                 ],
             ]);
             return;

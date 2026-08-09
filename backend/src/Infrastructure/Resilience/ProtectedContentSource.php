@@ -54,9 +54,9 @@ final class ProtectedContentSource implements ContentSourceInterface
         return $this->run(__FUNCTION__, [$id], fn (): array => $this->source->getMovie($id));
     }
 
-    public function search(string $query): array
+    public function search(string $query, array $params = []): array
     {
-        return $this->run(__FUNCTION__, [$query], fn (): array => $this->source->search($query));
+        return $this->run(__FUNCTION__, [$query, $params], fn (): array => $this->source->search($query, $params));
     }
 
     public function getTrendingTvDay(): array
@@ -98,9 +98,9 @@ final class ProtectedContentSource implements ContentSourceInterface
         );
     }
 
-    public function searchTv(string $query): array
+    public function searchTv(string $query, array $params = []): array
     {
-        return $this->run(__FUNCTION__, [$query], fn (): array => $this->source->searchTv($query));
+        return $this->run(__FUNCTION__, [$query, $params], fn (): array => $this->source->searchTv($query, $params));
     }
 
     public function discoverTv(array $params = []): array
