@@ -11,25 +11,12 @@ use App\Service\MovieService;
 use App\Service\TvService;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\TvController;
-use App\Infrastructure\Meilisearch\MeilisearchClient;
-use App\Infrastructure\Meilisearch\MeilisearchGateway;
-use App\Infrastructure\Meilisearch\MeilisearchHealthChecker;
-use App\Infrastructure\Meilisearch\MeilisearchIndexManager;
-use App\Infrastructure\Meilisearch\MediaDocumentFactory;
-use App\Infrastructure\Redis\RedisClient;
-use App\Infrastructure\Redis\RedisGateway;
-use App\Infrastructure\Redis\RedisHealthChecker;
 use App\Repository\MovieRepository;
-use App\Service\CacheService;
-use App\Service\RateLimiter;
 use App\Service\RateLimitCheckerInterface;
-use App\Service\MediaIndexPort;
-use App\Service\MediaIndexSyncService;
 use App\Service\SearchService;
 use App\Repository\SearchRepository;
 use App\Http\Controllers\SearchController;
 use App\Infrastructure\Resilience\FileRateLimiter;
-use App\Infrastructure\Resilience\FailOpenRateLimiter;
 use App\Infrastructure\Resilience\ProtectedContentSource;
 use App\Infrastructure\Resilience\CircuitBreaker;
 use App\Infrastructure\Resilience\FileRequestLimiter;
@@ -80,7 +67,7 @@ function content_source(): \App\Service\ContentSourceInterface
 
 function movie_service(): MovieService
 {
-    return new MovieService(content_source(), movie_repository(), cache_service(), media_index_port());
+    return new MovieService(content_source(), movie_repository());
 }
 
 function movie_controller(): MovieController
@@ -90,7 +77,7 @@ function movie_controller(): MovieController
 
 function tv_service(): TvService
 {
-    return new TvService(content_source(), movie_repository(), cache_service(), media_index_port());
+    return new TvService(content_source(), movie_repository());
 }
 
 function tv_controller(): TvController
@@ -100,13 +87,7 @@ function tv_controller(): TvController
 
 function search_repository(): SearchRepository
 {
-    $config = meilisearch_config();
-
-    return new SearchRepository(
-        movie_repository(),
-        meilisearch_gateway(),
-        $config['media_index'],
-    );
+    return new SearchRepository(movie_repository());
 }
 
 function search_service(): SearchService
@@ -115,122 +96,12 @@ function search_service(): SearchService
         content_source(),
         search_repository(),
         movie_repository(),
-        cache_service(),
-        media_index_port(),
     );
 }
 
 function search_controller(): SearchController
 {
     return new SearchController(search_service());
-}
-
-function meilisearch_gateway(): MeilisearchGateway
-{
-    static $gateway = null;
-
-    if ($gateway instanceof MeilisearchGateway) {
-        return $gateway;
-    }
-
-    $config = meilisearch_config();
-    $gateway = new MeilisearchClient($config['host'], $config['api_key']);
-
-    return $gateway;
-}
-
-function meilisearch_index_manager(): MeilisearchIndexManager
-{
-    return new MeilisearchIndexManager(
-        meilisearch_gateway(),
-        meilisearch_config()['media_index'],
-        meilisearch_config()['people_index'],
-    );
-}
-
-function media_index_port(): ?MediaIndexPort
-{
-    try {
-        $config = meilisearch_config();
-
-        return new MediaIndexSyncService(
-            meilisearch_gateway(),
-            new MediaDocumentFactory(),
-            $config['media_index'],
-        );
-    } catch (Throwable $exception) {
-        error_log('Media index initialization failed: ' . $exception->getMessage());
-
-        return null;
-    }
-}
-
-function media_index_sync_service(): MediaIndexSyncService
-{
-    $config = meilisearch_config();
-
-    return new MediaIndexSyncService(
-        meilisearch_gateway(),
-        new MediaDocumentFactory(),
-        $config['media_index'],
-    );
-}
-
-function meilisearch_is_healthy(): bool
-{
-    try {
-        return (new MeilisearchHealthChecker(meilisearch_gateway()))->isHealthy();
-    } catch (Throwable $exception) {
-        error_log('Meilisearch health check failed: ' . $exception->getMessage());
-
-        return false;
-    }
-}
-
-function redis_gateway(): ?RedisGateway
-{
-    static $gateway;
-    static $initialized = false;
-
-    if ($initialized) {
-        return $gateway;
-    }
-
-    $initialized = true;
-
-    try {
-        $config = redis_config();
-        $parameters = [
-            'scheme' => 'tcp',
-            'host' => $config['host'],
-            'port' => $config['port'],
-            'timeout' => $config['timeout'],
-        ];
-
-        if ($config['password'] !== null) {
-            $parameters['password'] = $config['password'];
-        }
-
-        $gateway = new RedisClient(new \Predis\Client($parameters));
-
-        // Проверяем соединение один раз при старте процесса, чтобы недоступный
-        // Redis не добавлял таймаут к каждому чтению и записи каталога.
-        if (!$gateway->health()) {
-            $gateway = null;
-        }
-    } catch (Throwable $exception) {
-        error_log('Redis client initialization failed: ' . $exception->getMessage());
-        $gateway = null;
-    }
-
-    return $gateway;
-}
-
-function cache_service(): ?CacheService
-{
-    $gateway = redis_gateway();
-
-    return $gateway === null ? null : new CacheService($gateway);
 }
 
 function rate_limiter(): RateLimitCheckerInterface
@@ -241,8 +112,6 @@ function rate_limiter(): RateLimitCheckerInterface
         return $limiter;
     }
 
-    $gateway = redis_gateway();
-
     try {
         $fallback = new FileRateLimiter(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gexusfilm-rate-limit');
     } catch (Throwable $exception) {
@@ -250,18 +119,9 @@ function rate_limiter(): RateLimitCheckerInterface
         $fallback = null;
     }
 
-    $limiter = $gateway === null
-        ? ($fallback ?? new FailOpenRateLimiter())
-        : new RateLimiter($gateway, $fallback);
+    $limiter = $fallback ?? new \App\Infrastructure\Resilience\FailOpenRateLimiter();
 
     return $limiter;
-}
-
-function redis_is_healthy(): bool
-{
-    $gateway = redis_gateway();
-
-    return $gateway !== null && (new RedisHealthChecker($gateway))->isHealthy();
 }
 
 function json_response(array $data, ?int $status = null): void

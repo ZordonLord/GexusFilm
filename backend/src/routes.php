@@ -12,14 +12,11 @@ function createRouter(): Router
     $router = new Router();
 
     $router->get('/api/health', static function (array $params): void {
-        $meilisearchAvailable = meilisearch_is_healthy();
-        $redisAvailable = redis_is_healthy();
-
         json_response([
-            'status' => $meilisearchAvailable && $redisAvailable ? 'ok' : 'degraded',
+            'status' => 'ok',
             'services' => [
-                'meilisearch' => $meilisearchAvailable ? 'available' : 'unavailable',
-                'redis' => $redisAvailable ? 'available' : 'unavailable',
+                'postgresql' => 'configured',
+                'tmdb' => 'configured',
             ],
         ], 200);
     });

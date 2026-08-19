@@ -97,42 +97,6 @@ function cache_ttl_minutes(): int
     return max(1, (int) env_value('CACHE_TTL_MINUTES', '1440'));
 }
 
-function meilisearch_config(): array
-{
-    $apiKey = env_value('MEILISEARCH_API_KEY');
-
-    return [
-        'host' => rtrim(env_value('MEILISEARCH_HOST', 'http://127.0.0.1:7700'), '/'),
-        'api_key' => $apiKey === '' ? null : $apiKey,
-        'media_index' => env_value('MEILISEARCH_MEDIA_INDEX', 'media'),
-        'people_index' => env_value('MEILISEARCH_PEOPLE_INDEX', 'people'),
-        'reindex_batch_size' => min(500, max(1, (int) env_value('MEILISEARCH_REINDEX_BATCH_SIZE', '100'))),
-    ];
-}
-
-function redis_config(): array
-{
-    $password = env_value('REDIS_PASSWORD');
-
-    return [
-        'host' => env_value('REDIS_HOST', '127.0.0.1'),
-        'port' => (int) env_value('REDIS_PORT', '6379'),
-        'password' => $password === '' ? null : $password,
-        'timeout' => max(0.1, (float) env_value('REDIS_TIMEOUT', '1.0')),
-    ];
-}
-
-function cache_ttl_config(): array
-{
-    return [
-        'catalog' => max(1, (int) env_value('REDIS_CACHE_TTL_SECONDS', '300')),
-        'details' => max(1, (int) env_value('REDIS_DETAILS_TTL_SECONDS', '900')),
-        'search' => max(1, (int) env_value('REDIS_SEARCH_TTL_SECONDS', '300')),
-        'discover' => max(1, (int) env_value('REDIS_DISCOVER_TTL_SECONDS', '300')),
-        'genres' => max(1, (int) env_value('REDIS_GENRES_TTL_SECONDS', '86400')),
-    ];
-}
-
 function rate_limit_config(): array
 {
     return [

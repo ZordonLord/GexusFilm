@@ -14,9 +14,8 @@ final class FailOpenRateLimiter implements RateLimitCheckerInterface
         $now = time();
         $resetAt = $now - ($now % $windowSeconds) + $windowSeconds;
 
-        // Это только последний аварийный путь: штатно используется файловый
-        // limiter, а Redis — распределённый limiter. Блокировать каталог из-за
-        // недоступности обеих временных систем хуже, чем временно пропустить API.
+        // Это только последний аварийный путь: блокировать каталог из-за
+        // недоступности временной защиты хуже, чем временно пропустить API.
         return new RateLimitResult(true, $limit, $limit, $resetAt);
     }
 }

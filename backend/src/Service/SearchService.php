@@ -14,8 +14,6 @@ final class SearchService implements SearchServiceInterface
         private ContentSourceInterface $contentSource,
         private SearchRepository $searchRepository,
         private ?MovieRepository $mediaRepository = null,
-        private ?CacheService $cache = null,
-        private ?MediaIndexPort $mediaIndex = null,
     ) {
     }
 
@@ -129,7 +127,6 @@ final class SearchService implements SearchServiceInterface
             $saved = $type === 'tv'
                 ? $this->mediaRepository?->saveTvSummaries($results) ?? []
                 : $this->mediaRepository?->saveMovieSummaries($results) ?? [];
-            $this->mediaIndex?->scheduleSavedMedia($saved);
         } catch (Throwable $exception) {
             error_log('Search result persistence failed: ' . $exception::class);
         }
@@ -137,12 +134,6 @@ final class SearchService implements SearchServiceInterface
 
     private function getCached(string $key): ?array
     {
-        $cached = $this->cache?->get($key);
-
-        if ($cached !== null) {
-            return $cached;
-        }
-
         try {
             return $this->mediaRepository?->getCachedResponse($key);
         } catch (Throwable $exception) {
@@ -155,10 +146,8 @@ final class SearchService implements SearchServiceInterface
     /** @param array<string, mixed> $response */
     private function saveCached(string $key, array $response): void
     {
-        $ttl = cache_ttl_config()['search'];
-        $this->cache?->put($key, $response, $ttl);
         try {
-            $this->mediaRepository?->saveCachedResponse($key, $response, max(1, (int) ceil($ttl / 60)));
+            $this->mediaRepository?->saveCachedResponse($key, $response, cache_ttl_minutes());
         } catch (Throwable $exception) {
             error_log('Search persistent cache write failed: ' . $exception::class);
         }

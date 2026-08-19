@@ -11,8 +11,6 @@ class TvService
     public function __construct(
         private ContentSourceInterface $contentSource,
         private ?MovieRepository $repository,
-        private ?CacheService $cache = null,
-        private ?MediaIndexPort $mediaIndex = null,
     ) {
     }
 
@@ -20,15 +18,14 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::catalog('tv', 'trending-day');
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         $data = $this->contentSource->getTrendingTvDay();
 
-        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
-
-        $this->scheduleIndex($this->repository?->saveTvSummaries($data['results'] ?? []) ?? []);
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
 
         return $data;
     }
@@ -37,15 +34,14 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::catalog('tv', 'popular');
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         $data = $this->contentSource->getPopularTv();
 
-        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
-
-        $this->scheduleIndex($this->repository?->saveTvSummaries($data['results'] ?? []) ?? []);
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
 
         return $data;
     }
@@ -54,15 +50,14 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::catalog('tv', 'on-the-air');
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         $data = $this->contentSource->getOnTheAirTv();
 
-        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
-
-        $this->scheduleIndex($this->repository?->saveTvSummaries($data['results'] ?? []) ?? []);
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
 
         return $data;
     }
@@ -71,15 +66,14 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::catalog('tv', 'airing-today');
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['catalog'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         $data = $this->contentSource->getAiringTodayTv();
 
-        $this->saveCached($cacheKey, $data, cache_ttl_config()['catalog']);
-
-        $this->scheduleIndex($this->repository?->saveTvSummaries($data['results'] ?? []) ?? []);
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
 
         return $data;
     }
@@ -88,22 +82,21 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::details('tv', $id);
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['details'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         if ($this->repository) {
             $cached = $this->repository->getTvDetails($id);
             if ($cached) {
-                return $this->cache?->promote($cacheKey, $cached, cache_ttl_config()['details']) ?? $cached;
+                return $cached;
             }
         }
 
         $tv = $this->contentSource->getTv($id);
 
-        $this->scheduleIndex([$this->repository?->saveTvDetails($tv)]);
-
-        $this->saveCached($cacheKey, $tv, cache_ttl_config()['details']);
+        $this->repository?->saveTvDetails($tv);
+        $this->saveCached($cacheKey, $tv);
 
         return $tv;
     }
@@ -112,13 +105,13 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::season($seriesId, $seasonNumber);
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['details'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         $data = $this->contentSource->getTvSeason($seriesId, $seasonNumber);
 
-        $this->saveCached($cacheKey, $data, cache_ttl_config()['details']);
+        $this->saveCached($cacheKey, $data);
 
         return $data;
     }
@@ -127,15 +120,14 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::search('tv', $query);
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['search'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         $result = $this->contentSource->searchTv($query);
 
-        $this->saveCached($cacheKey, $result, cache_ttl_config()['search']);
-
-        $this->scheduleIndex($this->repository?->saveTvSummaries($result['results'] ?? []) ?? []);
+        $this->saveCached($cacheKey, $result);
+        $this->repository?->saveTvSummaries($result['results'] ?? []);
 
         return $result;
     }
@@ -146,7 +138,7 @@ class TvService
         $page = (int) ($params['page'] ?? 1);
         $cacheKey = CacheKeyFactory::discover('tv', $genreId, $page);
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['discover'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
@@ -161,9 +153,8 @@ class TvService
 
         $data = $this->contentSource->discoverTv($tmdbParams);
 
-        $this->saveCached($cacheKey, $data, cache_ttl_config()['discover']);
-
-        $this->scheduleIndex($this->repository?->saveTvSummaries($data['results'] ?? []) ?? []);
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
 
         return $data;
     }
@@ -172,47 +163,24 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::genres('tv');
 
-        if (($cached = $this->getCached($cacheKey, cache_ttl_config()['genres'])) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null) {
             return $cached;
         }
 
         $data = $this->contentSource->getTvGenres();
 
-        $this->saveCached($cacheKey, $data, cache_ttl_config()['genres']);
+        $this->saveCached($cacheKey, $data);
 
         return $data;
     }
 
-    private function getCached(string $cacheKey, int $ttlSeconds): ?array
+    private function getCached(string $cacheKey): ?array
     {
-        $cached = $this->cache?->get($cacheKey);
-
-        if ($cached !== null) {
-            return $cached;
-        }
-
-        $cached = $this->repository?->getCachedResponse($cacheKey);
-
-        if ($cached !== null) {
-            return $this->cache?->promote($cacheKey, $cached, $ttlSeconds) ?? $cached;
-        }
-
-        return $cached;
+        return $this->repository?->getCachedResponse($cacheKey);
     }
 
-    /** @param list<array<string, mixed>|null> $records */
-    private function scheduleIndex(array $records): void
+    private function saveCached(string $cacheKey, array $data): void
     {
-        $records = array_values(array_filter($records));
-        $this->mediaIndex?->scheduleSavedMedia($records);
-    }
-
-    private function saveCached(string $cacheKey, array $data, int $ttlSeconds): void
-    {
-        $this->cache?->put($cacheKey, $data, $ttlSeconds);
-
-        if ($this->repository) {
-            $this->repository->saveCachedResponse($cacheKey, $data, max(1, (int) ceil($ttlSeconds / 60)));
-        }
+        $this->repository?->saveCachedResponse($cacheKey, $data, cache_ttl_minutes());
     }
 }
