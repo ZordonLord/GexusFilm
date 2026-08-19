@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { getMediaTitle, getMediaYear, getMediaRoute } from "../utils/media";
+import {
+  getMediaId,
+  getMediaTitle,
+  getMediaYear,
+  getMediaRoute,
+  formatRating,
+} from "../utils/media";
 
 export default function Hero({ items = [], mediaType = "movie" }) {
   const [current, setCurrent] = useState(0);
@@ -25,16 +31,22 @@ export default function Hero({ items = [], mediaType = "movie" }) {
     return null;
   }
 
+  const id = getMediaId(item);
+
+  if (!id) {
+    return null;
+  }
+
   const title = getMediaTitle(item);
   const year = getMediaYear(item);
   const type = item.media_type || mediaType;
   const backdrop = item.backdrop_path
     ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
-    : "";
+    : null;
   const poster = item.poster_path
     ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-    : "";
-  const rating = item.vote_average > 0 ? item.vote_average.toFixed(1) : "—";
+    : null;
+  const rating = formatRating(item.vote_average);
   const overview = item.overview || "";
 
   return (
@@ -44,13 +56,16 @@ export default function Hero({ items = [], mediaType = "movie" }) {
         {!loaded && (
           <div className="absolute inset-0 bg-[#0f172a] animate-pulse" />
         )}
-        <img
-          src={backdrop}
-          alt=""
-          className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
-          onLoad={() => setLoaded(true)}
-          fetchpriority="high"
-        />
+        {backdrop && (
+          <img
+            src={backdrop}
+            alt=""
+            className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+            onLoad={() => setLoaded(true)}
+            onError={() => setLoaded(true)}
+            fetchPriority="high"
+          />
+        )}
       </div>
 
       {/* Градиентные затемнения */}
@@ -63,12 +78,15 @@ export default function Hero({ items = [], mediaType = "movie" }) {
           {/* Постер (десктоп) */}
           <div className="hidden md:block w-[200px] flex-shrink-0">
             <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
-              <img
-                src={poster}
-                alt={title}
-                className="w-full h-full object-cover"
-                loading="eager"
-              />
+              {poster && (
+                <img
+                  src={poster}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                  onError={(event) => { event.currentTarget.hidden = true; }}
+                />
+              )}
             </div>
           </div>
 
@@ -103,7 +121,7 @@ export default function Hero({ items = [], mediaType = "movie" }) {
             {/* Кнопки действий */}
             <div className="flex items-center gap-3">
               <Link
-                to={getMediaRoute(type, item.id)}
+                to={getMediaRoute(type, id)}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

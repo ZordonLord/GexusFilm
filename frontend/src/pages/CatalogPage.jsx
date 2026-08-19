@@ -14,6 +14,7 @@ import {
   getMovieGenres,
   getTvGenres,
 } from "../services/api";
+import { getMediaKey } from "../utils/media";
 
 import "../styles/CatalogPage.css";
 
@@ -208,13 +209,21 @@ export default function CatalogPage() {
                     <SkeletonCard key={`skeleton-${i}`} />
                   ))
                 : items.length > 0
-                  ? items.map((item) => (
-                      <MediaCard
-                        key={`${item.media_type || mediaType}-${item.id}`}
-                        item={item}
-                        mediaType={item.media_type || mediaType}
-                      />
-                    ))
+                  ? items.map((item) => {
+                      const key = getMediaKey(item, mediaType);
+
+                      if (!key) {
+                        return null;
+                      }
+
+                      return (
+                        <MediaCard
+                          key={key}
+                          item={item}
+                          mediaType={item.media_type || mediaType}
+                        />
+                      );
+                    })
                   : (
                     <div className="catalog-page__empty">
                       <svg className="catalog-page__empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>

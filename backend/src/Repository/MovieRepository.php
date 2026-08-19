@@ -499,6 +499,7 @@ class MovieRepository
 
         $statement = $this->pdo->prepare(
             'SELECT
+                tmdb_id AS id,
                 tmdb_id AS source_id,
                 media_type,
                 title,

@@ -12,7 +12,7 @@ import "../styles/MediaHero.css";
 export default function MediaHero({ media }) {
   const poster = media.poster_path
     ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
-    : "";
+    : null;
 
   const title = getMediaTitle(media);
   const year = getMediaYear(media);
@@ -23,10 +23,7 @@ export default function MediaHero({ media }) {
     <section className="media-hero">
 
       <div className="media-hero__poster">
-        <img
-          src={poster}
-          alt={title}
-        />
+        {poster && <img src={poster} alt={title} />}
       </div>
 
       <div className="media-hero__content">

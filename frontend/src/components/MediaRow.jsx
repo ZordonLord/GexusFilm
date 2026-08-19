@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 
 import MediaCard from "./MediaCard";
 import SkeletonCard from "./SkeletonCard";
+import { getMediaKey } from "../utils/media";
 
 import "../styles/MediaRow.css";
 
@@ -120,13 +121,21 @@ export default function MediaRow({
             ? Array.from({ length: 8 }).map((_, i) => (
                 <SkeletonCard key={`skeleton-${i}`} />
               ))
-            : items.map((item) => (
-                <MediaCard
-                  key={`${item.media_type || mediaType}-${item.id}`}
-                  item={item}
-                  mediaType={mediaType}
-                />
-              ))}
+            : items.map((item) => {
+                const key = getMediaKey(item, mediaType);
+
+                if (!key) {
+                  return null;
+                }
+
+                return (
+                  <MediaCard
+                    key={key}
+                    item={item}
+                    mediaType={mediaType}
+                  />
+                );
+              })}
         </div>
       </div>
 

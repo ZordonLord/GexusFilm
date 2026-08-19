@@ -15,6 +15,7 @@ import {
   getSearch,
   getTvGenres,
 } from "../services/api";
+import { getMediaKey } from "../utils/media";
 
 import "../styles/SearchPage.css";
 
@@ -371,7 +372,16 @@ export default function SearchPage() {
               {loading
                 ? Array.from({ length: 12 }).map((_, index) => <SkeletonCard key={`search-skeleton-${index}`} />)
                 : items.length > 0
-                  ? items.map((item) => <MediaCard key={`${item.media_type}-${item.id}`} item={item} mediaType={item.media_type} />)
+                  ? items.map((item) => {
+                      const mediaType = item.media_type || "movie";
+                      const key = getMediaKey(item, mediaType);
+
+                      if (!key) {
+                        return null;
+                      }
+
+                      return <MediaCard key={key} item={item} mediaType={mediaType} />;
+                    })
                   : (
                     <div className="search-page__state search-page__state--empty">
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
