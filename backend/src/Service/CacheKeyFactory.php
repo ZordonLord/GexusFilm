@@ -52,4 +52,9 @@ final class CacheKeyFactory
     {
         return "cache:genres:$mediaType";
     }
+
+    public static function rateLimit(string $clientId, string $bucket, int $windowSeconds): string
+    {
+        return 'rate-limit:' . $clientId . ":$bucket:" . intdiv(time(), $windowSeconds);
+    }
 }
