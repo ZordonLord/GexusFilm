@@ -29,6 +29,7 @@ use App\Service\SearchService;
 use App\Repository\SearchRepository;
 use App\Http\Controllers\SearchController;
 use App\Infrastructure\Resilience\FileRateLimiter;
+use App\Infrastructure\Resilience\FailOpenRateLimiter;
 use App\Infrastructure\Resilience\ProtectedContentSource;
 use App\Infrastructure\Resilience\CircuitBreaker;
 use App\Infrastructure\Resilience\FileRequestLimiter;
@@ -55,7 +56,7 @@ function content_source(): \App\Service\ContentSourceInterface
 
     $config = tmdb_protection_config();
     $source = new ProtectedContentSource(
-        new \App\TmdbClient(tmdb_api_key()),
+        new \App\TmdbClient(tmdb_api_key(), tmdb_ca_bundle()),
         new FileSingleflight(
             $config['coordination_directory'],
             $config['singleflight_timeout_ms'],
@@ -211,6 +212,12 @@ function redis_gateway(): ?RedisGateway
         }
 
         $gateway = new RedisClient(new \Predis\Client($parameters));
+
+        // Проверяем соединение один раз при старте процесса, чтобы недоступный
+        // Redis не добавлял таймаут к каждому чтению и записи каталога.
+        if (!$gateway->health()) {
+            $gateway = null;
+        }
     } catch (Throwable $exception) {
         error_log('Redis client initialization failed: ' . $exception->getMessage());
         $gateway = null;
@@ -228,10 +235,26 @@ function cache_service(): ?CacheService
 
 function rate_limiter(): RateLimitCheckerInterface
 {
-    $gateway = redis_gateway();
-    $fallback = new FileRateLimiter(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gexusfilm-rate-limit');
+    static $limiter = null;
 
-    return $gateway === null ? $fallback : new RateLimiter($gateway, $fallback);
+    if ($limiter instanceof RateLimitCheckerInterface) {
+        return $limiter;
+    }
+
+    $gateway = redis_gateway();
+
+    try {
+        $fallback = new FileRateLimiter(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gexusfilm-rate-limit');
+    } catch (Throwable $exception) {
+        error_log('File rate limiter initialization failed: ' . $exception->getMessage());
+        $fallback = null;
+    }
+
+    $limiter = $gateway === null
+        ? ($fallback ?? new FailOpenRateLimiter())
+        : new RateLimiter($gateway, $fallback);
+
+    return $limiter;
 }
 
 function redis_is_healthy(): bool

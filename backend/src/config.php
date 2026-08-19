@@ -58,6 +58,29 @@ function tmdb_api_key(): string
     return $apiKey;
 }
 
+function tmdb_ca_bundle(): ?string
+{
+    $configuredPath = env_value('TMDB_CAINFO');
+
+    if ($configuredPath !== '' && is_file($configuredPath)) {
+        return $configuredPath;
+    }
+
+    foreach (['CURL_CA_BUNDLE', 'SSL_CERT_FILE'] as $environmentKey) {
+        $environmentPath = env_value($environmentKey);
+
+        if ($environmentPath !== '' && is_file($environmentPath)) {
+            return $environmentPath;
+        }
+    }
+
+    // В Windows-сборке PHP CA bundle часто не прописан в php.ini, но Git for
+    // Windows уже поставляет актуальный публичный набор корневых сертификатов.
+    $windowsGitBundle = 'C:\\Program Files\\Git\\usr\\ssl\\certs\\ca-bundle.crt';
+
+    return is_file($windowsGitBundle) ? $windowsGitBundle : null;
+}
+
 function db_config(): array
 {
     return [

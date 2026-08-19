@@ -14,10 +14,13 @@ class TmdbClient implements ContentSourceInterface
     private string $apiKey;
     private string $baseUrl = 'https://api.themoviedb.org/3';
 
-    public function __construct(string $apiKey)
+    public function __construct(string $apiKey, ?string $caBundle = null)
     {
         $this->apiKey = $apiKey;
+        $this->caBundle = $caBundle;
     }
+
+    private ?string $caBundle;
 
     private function request(string $endpoint, array $params = []): array
     {
@@ -28,7 +31,7 @@ class TmdbClient implements ContentSourceInterface
 
         $ch = curl_init($url);
 
-        curl_setopt_array($ch, [
+        $curlOptions = [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_CONNECTTIMEOUT => 5,
@@ -37,7 +40,13 @@ class TmdbClient implements ContentSourceInterface
             CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
-        ]);
+        ];
+
+        if ($this->caBundle !== null) {
+            $curlOptions[CURLOPT_CAINFO] = $this->caBundle;
+        }
+
+        curl_setopt_array($ch, $curlOptions);
 
         $response = curl_exec($ch);
 
