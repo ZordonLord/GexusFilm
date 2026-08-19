@@ -225,6 +225,94 @@ VITE_API_BASE_URL=http://localhost:8001
 Copy-Item frontend\.env.example frontend\.env.local
 ```
 
+## Production
+
+В production не используются `php -S` и `npm run dev`: это development-серверы.
+Рекомендуемая схема для Linux-сервера — Nginx + PHP-FPM + собранный Vite
+frontend:
+
+```text
+Browser → Nginx → frontend/dist
+                 └── /api/* → PHP-FPM → backend/public/index.php
+                                      └── PostgreSQL / TMDB
+```
+
+### 1. Подготовить backend
+
+На сервере создайте `backend/.env` с production-значениями и примените схему
+PostgreSQL, как описано выше. Затем установите только production-зависимости:
+
+```bash
+cd /var/www/gexusfilm/backend
+composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+```
+
+`backend/` не должен быть публичным document root. Публичной точкой входа API
+остаётся только `backend/public/index.php` через PHP-FPM.
+
+### 2. Собрать frontend
+
+Для same-origin deployment, когда frontend и API находятся на одном домене,
+`VITE_API_BASE_URL` не нужен: оставьте его пустым, и браузер будет обращаться к
+`/api` на том же домене.
+
+```bash
+cd /var/www/gexusfilm/frontend
+npm ci
+npm run build
+```
+
+В production значение `VITE_API_BASE_URL` встраивается в JavaScript во время
+сборки. Если API находится на отдельном домене, создайте перед сборкой
+`frontend/.env.production.local`:
+
+```env
+VITE_API_BASE_URL=https://api.example.com
+```
+
+После изменения этого файла frontend нужно собрать заново. В runtime менять env
+уже запущенного static build недостаточно.
+
+### 3. Настроить Nginx
+
+Пример server block для same-origin deployment (`example.com`). Путь к сокету
+PHP-FPM замените на версию PHP, установленную на сервере:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+
+    root /var/www/gexusfilm/frontend/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ^~ /api/ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /var/www/gexusfilm/backend/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param DOCUMENT_ROOT /var/www/gexusfilm/backend/public;
+        fastcgi_param REQUEST_URI $request_uri;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+    }
+}
+```
+
+После проверки конфигурации включите и перезапустите сервисы:
+
+```bash
+sudo nginx -t
+sudo systemctl enable --now php8.3-fpm nginx
+sudo systemctl reload nginx
+```
+
+Для production также настройте HTTPS (например, через Certbot), firewall и
+резервное копирование PostgreSQL. После этого приложение работает как системные
+сервисы и не требует открытого терминала или активной SSH-сессии.
+
 ## API
 
 Все endpoints используют `GET` и возвращают JSON.
