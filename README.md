@@ -171,8 +171,23 @@ npm install
 npm run dev
 ```
 
-Vite проксирует `/api` на `http://localhost:8000`. Для другого backend задайте
-`VITE_API_BASE_URL`.
+По умолчанию Vite проксирует `/api` на `http://localhost:8000`. Для другого
+backend создайте файл `frontend/.env.local` (он не попадёт в Git):
+
+```env
+VITE_API_BASE_URL=http://localhost:8001
+```
+
+Значение — это только origin backend без завершающего `/`; frontend сам добавит
+путь `/api`. Например, запрос уйдёт на `http://localhost:8001/api/movies/popular`.
+После изменения env-файла перезапустите `npm run dev`. В качестве шаблона можно
+скопировать `frontend/.env.example`.
+
+В Windows PowerShell:
+
+```powershell
+Copy-Item frontend\.env.example frontend\.env.local
+```
 
 ## API
 
