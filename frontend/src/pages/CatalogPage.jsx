@@ -146,7 +146,7 @@ export default function CatalogPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+    <div className="catalog-page-shell flex flex-col min-h-screen bg-[var(--bg)]">
       <Header />
 
       <div className="flex flex-1">

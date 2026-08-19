@@ -1,193 +1,270 @@
-/* MediaCard — современные карточки с hover-эффектами */
+/* MediaCard — горизонтальная карточка с постером и описанием. */
 
 .media-card-link {
+  --media-card-radius: 16px;
+  container-type: inline-size;
+  container-name: media-card;
   display: block;
-  flex-shrink: 0;
-  width: var(--card-width);
-  text-decoration: none;
+  width: 100%;
+  min-width: 0;
   color: inherit;
+  text-decoration: none;
   outline: none;
 }
 
 .media-card {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--card-bg);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(112px, 32%) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 260px;
+  overflow: clip;
+  border: 1px solid var(--border);
+  border-radius: var(--media-card-radius);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.98));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .media-card-link:hover .media-card {
-  transform: scale(1.05);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-  z-index: 2;
+  transform: translateY(-2px);
+  border-color: var(--border-hover);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
 }
 
 .media-card-link:focus-visible .media-card {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  outline: 2px solid #22d3ee;
+  outline-offset: 3px;
 }
 
-/* Обёртка постера — задаёт высоту через aspect-ratio */
 .media-card__poster-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 2/3;
-  overflow: hidden;
+  height: 100%;
+  min-width: 0;
+  min-height: 100%;
+  overflow: clip;
+  background: #111827;
 }
 
-/* Скелетон загрузки — поверх постера, не влияет на высоту */
-.media-card__skeleton {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%);
-  background-size: 200% 200%;
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* Постер */
 .media-card__poster {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  transition: opacity 0.3s ease;
+  opacity: 0;
+  transition: opacity 220ms ease, filter 180ms ease;
+}
+
+.media-card__poster.is-loaded {
+  opacity: 1;
+}
+
+.media-card-link:hover .media-card__poster.is-loaded {
+  filter: saturate(1.08) brightness(0.88);
+}
+
+.media-card__poster-placeholder,
+.media-card__skeleton {
+  position: absolute;
+  inset: 0;
 }
 
 .media-card__poster-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 30% 20%, rgba(34, 211, 238, 0.16), transparent 42%), linear-gradient(145deg, #1e293b, #0f172a);
+  color: rgba(148, 163, 184, 0.58);
 }
 
-.media-card__poster.loaded {
-  opacity: 1;
+.media-card__poster-placeholder svg {
+  width: 30%;
+  min-width: 28px;
+  max-width: 52px;
 }
 
-/* Оверлей при наведении */
-.media-card__overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0);
+.media-card__skeleton,
+.skeleton-text {
+  background: linear-gradient(110deg, rgba(51, 65, 85, 0.75) 8%, rgba(71, 85, 105, 0.4) 18%, rgba(51, 65, 85, 0.75) 33%);
+  background-size: 200% 100%;
+  animation: media-card-shimmer 1.5s linear infinite;
+}
+
+@keyframes media-card-shimmer {
+  to { background-position-x: -200%; }
+}
+
+.media-card__content {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s ease;
-  pointer-events: none;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: clamp(16px, 2.5cqi, 28px);
 }
 
-.media-card-link:hover .media-card__overlay {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-.media-card__play {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
-  pointer-events: auto;
-}
-
-.media-card-link:hover .media-card__play {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.media-card__play:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.1);
-}
-
-/* Рейтинг */
-.media-card__rating {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fbbf24;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-/* Информация внизу карточки */
-.media-card__info {
-  padding: 10px 10px 12px;
-}
-
-.media-card__year {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
-  font-weight: 500;
+.media-card__heading {
+  min-width: 0;
 }
 
 .media-card__title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #fff;
-  margin: 2px 0 0;
-  line-height: 1.3;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  margin: 0;
+  overflow: clip;
+  color: var(--text);
+  font-size: clamp(1.05rem, 2.5cqi, 1.65rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.media-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.media-card__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fbbf24;
+}
+
+.media-card__rating svg {
+  width: 13px;
+  height: 13px;
+}
+
+.media-card__genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.media-card__genre {
+  max-width: 100%;
   overflow: hidden;
+  padding: 5px 9px;
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.08);
+  color: #a5f3fc;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Скелетон-текст в карточке */
+.media-card__overview {
+  display: -webkit-box;
+  margin: 0;
+  overflow: clip;
+  color: #cbd5e1;
+  font-size: clamp(0.78rem, 1.35cqi, 0.9375rem);
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.media-card__action {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  margin-block-start: auto;
+  padding: 0 14px;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 10px;
+  background: rgba(8, 145, 178, 0.18);
+  color: #cffafe;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.media-card-link:hover .media-card__action {
+  border-color: rgba(34, 211, 238, 0.5);
+  background: rgba(8, 145, 178, 0.34);
+  color: #fff;
+}
+
+.media-card__action svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 180ms ease;
+}
+
+.media-card-link:hover .media-card__action svg {
+  transform: translateX(2px);
+}
+
 .skeleton-text {
-  height: 12px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%);
-  background-size: 200% 200%;
-  animation: shimmer 1.5s ease-in-out infinite;
-  margin-bottom: 8px;
+  flex: 0 0 auto;
+  height: 11px;
+  border-radius: 999px;
 }
 
-.skeleton-text--short {
-  width: 40%;
-}
+.skeleton-text--title { width: 72%; height: 22px; }
+.skeleton-text--meta { width: 48%; }
+.skeleton-text--genres { width: 62%; }
+.skeleton-text--overview { width: 96%; }
+.skeleton-text--overview-short { width: 68%; }
+.skeleton-text--action { width: 104px; height: 40px; margin-block-start: auto; border-radius: 10px; }
 
-.skeleton-text--long {
-  width: 80%;
-}
-
-/* Адаптив */
-@media (max-width: 768px) {
-  .media-card-link {
-    width: 160px;
+@container media-card (max-width: 360px) {
+  .media-card {
+    grid-template-columns: minmax(112px, 32%) minmax(0, 1fr);
+    min-height: 210px;
   }
 
-  .media-card__play {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
+  .media-card__content {
+    gap: 8px;
+    padding: 13px;
   }
 
-  .media-card__title {
-    font-size: 0.8125rem;
+  .media-card__overview {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  .media-card__action {
+    min-height: 36px;
+    padding-inline: 11px;
+    font-size: 0.75rem;
+  }
+}
+
+@container media-card (max-width: 260px) {
+  .media-card__genres,
+  .media-card__overview {
+    display: none;
+  }
+
+  .media-card__content {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-card__skeleton,
+  .skeleton-text {
+    animation: none;
+  }
+
+  .media-card,
+  .media-card__poster,
+  .media-card__action,
+  .media-card__action svg {
+    transition: none;
   }
 }

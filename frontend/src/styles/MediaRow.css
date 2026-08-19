@@ -112,10 +112,15 @@
   display: flex;
   gap: 12px;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
   scroll-behavior: smooth;
   padding: 8px 0;
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.row > .media-card-link {
+  flex: 0 0 clamp(360px, 42vw, 560px);
 }
 
 .row::-webkit-scrollbar {
@@ -139,5 +144,15 @@
   .row-overlay__arrow {
     width: 20px;
     height: 20px;
+  }
+
+  .row > .media-card-link {
+    flex-basis: min(88vw, 420px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    scroll-behavior: auto;
   }
 }

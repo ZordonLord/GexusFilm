@@ -8,9 +8,13 @@ export default function SkeletonCard() {
           <div className="media-card__skeleton" />
         </div>
 
-        <div className="media-card__info">
-          <div className="skeleton-text skeleton-text--short" />
-          <div className="skeleton-text skeleton-text--long" />
+        <div className="media-card__content">
+          <div className="skeleton-text skeleton-text--title" />
+          <div className="skeleton-text skeleton-text--meta" />
+          <div className="skeleton-text skeleton-text--genres" />
+          <div className="skeleton-text skeleton-text--overview" />
+          <div className="skeleton-text skeleton-text--overview skeleton-text--overview-short" />
+          <div className="skeleton-text skeleton-text--action" />
         </div>
       </article>
     </div>

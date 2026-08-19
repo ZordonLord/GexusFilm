@@ -115,7 +115,7 @@
 
 .catalog-page__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: 20px;
   min-height: 400px;
 }
@@ -210,12 +210,16 @@
   }
 
   .catalog-page__grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
     gap: 16px;
   }
 }
 
 @media (max-width: 768px) {
+  .catalog-page-shell > div > aside {
+    display: none;
+  }
+
   .catalog-page {
     padding: 20px 16px 0;
   }
@@ -225,7 +229,7 @@
   }
 
   .catalog-page__grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
 
