@@ -140,7 +140,9 @@ DB_USERNAME=gexusfilm
 DB_PASSWORD=gexusfilm-local-password
 ```
 
-### 2. Запустить PostgreSQL
+### 2. Подключить PostgreSQL
+
+#### Вариант A: Docker Compose
 
 ```bash
 docker compose up -d postgres
@@ -149,6 +151,40 @@ docker compose ps
 
 Схема из `backend/database.sql` применяется автоматически при первом создании
 Docker volume.
+
+#### Вариант B: уже установленный PostgreSQL
+
+Docker в этом сценарии не нужен. Создайте базу и пользователя в установленном
+PostgreSQL (если они ещё не созданы). Например, подключитесь к PostgreSQL под
+администратором и выполните:
+
+```sql
+CREATE USER gexusfilm WITH PASSWORD 'замените-на-сильный-пароль';
+CREATE DATABASE gexusfilm OWNER gexusfilm;
+```
+
+Затем примените схему проекта:
+
+```bash
+psql -h 127.0.0.1 -U gexusfilm -d gexusfilm -f backend/database.sql
+```
+
+Если PostgreSQL находится на другом сервере, замените `127.0.0.1` на его
+hostname или IP. Команда `psql` попросит пароль пользователя PostgreSQL. Если
+база и пользователь уже существуют, достаточно выполнить только команду `psql`.
+
+В `backend/.env` укажите те же параметры подключения:
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=gexusfilm
+DB_USERNAME=gexusfilm
+DB_PASSWORD=пароль-пользователя-postgresql
+```
+
+Корневой `.env` в этом варианте не нужен: он используется только для подстановки
+параметров Docker Compose.
 
 ### 3. Запустить backend
 
