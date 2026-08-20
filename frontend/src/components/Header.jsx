@@ -1,29 +1,34 @@
 // Верхняя панель с логотипом, поиском и кнопкой авторизации
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
+import { buildSearchPath } from "../utils/search";
+
+import "../styles/Header.css";
 
 export default function Header() {
-  const [query, setQuery] = useState("");
+  const location = useLocation();
   const navigate = useNavigate();
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const trimmed = query.trim();
-    if (trimmed) {
-      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
-    }
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    navigate(buildSearchPath(formData.get("q")));
   };
 
+  const currentQuery = location.pathname === "/search"
+    ? new URLSearchParams(location.search).get("q") || ""
+    : "";
+
   return (
-    <header className="sticky top-0 z-20 w-full h-16 flex items-center justify-between gap-4 px-6 border-b border-white/[0.06] bg-[var(--bg)]/80 backdrop-blur-xl">
+    <header className="site-header">
       {/* Левая часть — логотип */}
-      <div className="flex items-center gap-3 min-w-0 shrink-0">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">G</span>
+      <div className="site-header__brand">
+        <Link to="/" className="site-header__logo">
+          <div className="site-header__logo-mark">
+            <span>G</span>
           </div>
-          <span className="text-lg font-bold text-white tracking-tight">
+          <span className="site-header__logo-text">
             Gexus<span className="text-blue-400">Film</span>
           </span>
         </Link>
@@ -32,13 +37,15 @@ export default function Header() {
       {/* Поиск — по центру / растягивается */}
       <form
         onSubmit={handleSearch}
-        className="flex-1 max-w-md mx-auto w-full"
+        className="site-header__search"
         role="search"
+        method="get"
+        action="/search"
       >
-        <div className="relative group">
+        <div className="site-header__search-control">
           {/* Иконка лупы */}
           <svg
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[var(--primary)] transition-colors duration-200 pointer-events-none"
+            className="site-header__search-icon"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -52,24 +59,28 @@ export default function Header() {
           </svg>
 
           <input
+            id="site-search"
+            name="q"
             type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            defaultValue={currentQuery}
             placeholder="Поиск фильмов и сериалов..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white text-sm placeholder:text-white/30 outline-none transition-all duration-200 focus:bg-white/[0.08] focus:border-[var(--primary)]/40 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
+            className="site-header__search-input"
+            autoComplete="off"
+            maxLength={200}
+            enterKeyHint="search"
             aria-label="Поиск фильмов и сериалов"
           />
         </div>
       </form>
 
       {/* Правая часть — кнопка авторизации */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="site-header__actions">
         <button
           type="button"
-          className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-[var(--primary)] text-white text-sm font-semibold transition-all duration-200 hover:bg-blue-500 active:scale-95 shadow-lg shadow-blue-500/20"
+          className="site-header__login"
         >
           <svg
-            className="w-4 h-4"
+            className="site-header__login-icon"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -81,7 +92,7 @@ export default function Header() {
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             />
           </svg>
-          <span className="hidden sm:inline">Войти</span>
+          <span>Войти</span>
         </button>
       </div>
     </header>

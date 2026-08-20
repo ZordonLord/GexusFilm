@@ -16,6 +16,7 @@ import {
   getTvGenres,
 } from "../services/api";
 import { getMediaKey } from "../utils/media";
+import { normalizeSearchQuery } from "../utils/search";
 
 import "../styles/SearchPage.css";
 
@@ -52,7 +53,7 @@ function parseSearchParams(searchParams) {
   const perPageParam = Number.parseInt(searchParams.get("per_page") || "20", 10);
 
   return {
-    query: searchParams.get("q")?.trim() || "",
+    query: normalizeSearchQuery(searchParams.get("q")),
     type: ALLOWED_TYPES.has(typeParam) ? typeParam : "all",
     genreId: searchParams.get("genre_id") || "",
     year: searchParams.get("year") || "",
@@ -105,7 +106,7 @@ export default function SearchPage() {
 
     const timer = window.setTimeout(() => {
       const nextParams = new URLSearchParams(searchParams);
-      const nextQuery = queryInput.trim();
+      const nextQuery = normalizeSearchQuery(queryInput);
 
       if (nextQuery) {
         nextParams.set("q", nextQuery);
@@ -220,7 +221,15 @@ export default function SearchPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    updateUrl({ q: queryInput.trim(), page: "" });
+    const nextQuery = normalizeSearchQuery(queryInput);
+
+    if (nextQuery) {
+      updateUrl({ q: nextQuery, page: "" });
+      return;
+    }
+
+    // Пустой запрос переключает экран на подборку, а не отправляет q в API.
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
   const handlePageChange = (page) => {
