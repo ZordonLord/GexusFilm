@@ -3,12 +3,14 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { buildSearchPath } from "../utils/search";
+import { useSidebar } from "./SidebarContext";
 
 import "../styles/Header.css";
 
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isOpen, toggleSidebar } = useSidebar();
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -24,6 +26,19 @@ export default function Header() {
     <header className="site-header">
       {/* Левая часть — логотип */}
       <div className="site-header__brand">
+        <button
+          type="button"
+          className="site-header__menu-toggle"
+          onClick={toggleSidebar}
+          aria-controls="site-sidebar"
+          aria-expanded={isOpen}
+          aria-label={isOpen ? "Скрыть боковую панель" : "Показать боковую панель"}
+          title={isOpen ? "Скрыть боковую панель" : "Показать боковую панель"}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <Link to="/" className="site-header__logo">
           <div className="site-header__logo-mark">
             <span>G</span>
@@ -92,7 +107,7 @@ export default function Header() {
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             />
           </svg>
-          <span>Войти</span>
+          <span className="site-header__login-text">Войти</span>
         </button>
       </div>
     </header>

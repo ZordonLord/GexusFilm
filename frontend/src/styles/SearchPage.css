@@ -408,10 +408,6 @@
 }
 
 @media (max-width: 768px) {
-  .search-page__body > aside {
-    display: none;
-  }
-
   .search-page {
     padding: 28px 16px 0;
   }
