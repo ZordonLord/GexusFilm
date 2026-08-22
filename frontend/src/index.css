@@ -50,6 +50,28 @@ img {
   max-width: 100%;
 }
 
+/* Единая тёмная схема нативных выпадающих списков для контрастного текста. */
+select {
+  color: #f8fafc;
+  background-color: #0f172a;
+  color-scheme: dark;
+}
+
+select option {
+  color: #f8fafc;
+  background-color: #0f172a;
+}
+
+select option:checked {
+  color: #ffffff;
+  background-color: #2563eb;
+}
+
+select:disabled,
+select:disabled option {
+  color: #64748b;
+}
+
 /* Кастомный скроллбар */
 ::-webkit-scrollbar {
   width: 6px;

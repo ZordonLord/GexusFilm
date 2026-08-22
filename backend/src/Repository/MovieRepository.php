@@ -462,7 +462,10 @@ class MovieRepository
             $params['query_original'] = '%' . $query . '%';
         }
 
-        if (isset($criteria['genre_id'])) {
+        if (isset($criteria['genre_ids'])) {
+            $where[] = "genre_ids @> CAST(:genre_ids AS jsonb)";
+            $params['genre_ids'] = json_encode($criteria['genre_ids'], JSON_THROW_ON_ERROR);
+        } elseif (isset($criteria['genre_id'])) {
             $where[] = "genre_ids @> CAST(:genre_ids AS jsonb)";
             $params['genre_ids'] = json_encode([(int) $criteria['genre_id']], JSON_THROW_ON_ERROR);
         }

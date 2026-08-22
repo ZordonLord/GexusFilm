@@ -12,7 +12,9 @@ export default function App() {
       <SidebarProvider>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/discover" element={<CatalogPage />} />
+          <Route path="/movies" element={<CatalogPage key="movies-catalog" movieOnly />} />
+          <Route path="/tv" element={<CatalogPage key="tv-catalog" tvOnly />} />
+          <Route path="/discover" element={<CatalogPage key="all-catalog" />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/:type/:id" element={<MediaPage />} />
         </Routes>

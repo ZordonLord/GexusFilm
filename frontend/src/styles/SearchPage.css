@@ -263,6 +263,16 @@
   opacity: 0.55;
 }
 
+.search-page__field select option {
+  color: #f8fafc;
+  background: #0f172a;
+}
+
+.search-page__field select option:checked {
+  color: #fff;
+  background: #2563eb;
+}
+
 .search-page__segmented {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

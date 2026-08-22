@@ -49,6 +49,34 @@ final class SearchControllerTest extends TestCase
         $controller->discover(['page' => '0']);
     }
 
+    public function testDiscoverAcceptsUpToFiveUniqueGenreIds(): void
+    {
+        $service = $this->createMock(SearchServiceInterface::class);
+        $service->expects(self::once())
+            ->method('discover')
+            ->with([
+                'type' => 'movie',
+                'page' => 1,
+                'per_page' => 20,
+                'sort_by' => 'popularity.desc',
+                'genre_ids' => [28, 12, 878],
+            ])
+            ->willReturn(['page' => 1, 'results' => [], 'total_pages' => 0, 'total_results' => 0]);
+
+        (new SearchController($service))->discover([
+            'type' => 'movie',
+            'genre_ids' => '28,12,878',
+        ]);
+    }
+
+    public function testDiscoverRejectsDuplicateGenreIds(): void
+    {
+        $service = $this->createMock(SearchServiceInterface::class);
+
+        $this->expectException(ValidationException::class);
+        (new SearchController($service))->discover(['genre_ids' => '28,28']);
+    }
+
     public function testPersonTypeAndUnknownParameterAreRejected(): void
     {
         $service = $this->createMock(SearchServiceInterface::class);

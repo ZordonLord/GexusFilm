@@ -24,14 +24,18 @@ const MEDIA_TABS = [
   { key: "tv", label: "Сериалы" },
 ];
 
-export default function CatalogPage() {
-  const [mediaType, setMediaType] = useState("all");
+export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
+  const catalogType = movieOnly ? "movie" : tvOnly ? "tv" : "all";
+  const [mediaType, setMediaType] = useState(catalogType);
   const [items, setItems] = useState([]);
   const [genres, setGenres] = useState([]);
-  const [selectedGenre, setSelectedGenre] = useState(null);
+  const [selectedGenres, setSelectedGenres] = useState([]);
+  const [sortBy, setSortBy] = useState("year.desc");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const selectedGenreKey = selectedGenres.join(",");
 
   // Загрузка жанров
   useEffect(() => {
@@ -39,10 +43,11 @@ export default function CatalogPage() {
 
     async function loadGenres() {
       try {
-        const [movieGenres, tvGenres] = await Promise.all([
-          getMovieGenres(),
-          getTvGenres(),
-        ]);
+        const [movieGenres, tvGenres] = movieOnly
+          ? [await getMovieGenres(), { genres: [] }]
+          : tvOnly
+            ? [{ genres: [] }, await getTvGenres()]
+            : await Promise.all([getMovieGenres(), getTvGenres()]);
 
         if (cancelled) return;
 
@@ -58,7 +63,7 @@ export default function CatalogPage() {
 
     loadGenres();
     return () => { cancelled = true; };
-  }, []);
+  }, [movieOnly, tvOnly]);
 
   // Загрузка контента
   useEffect(() => {
@@ -66,11 +71,13 @@ export default function CatalogPage() {
 
     async function loadContent() {
       setLoading(true);
+      setError("");
 
       try {
-        const params = { page };
-        if (selectedGenre) {
-          params.genre_id = selectedGenre;
+        const params = { page, sort_by: sortBy };
+        const genreIds = selectedGenres.filter(Boolean);
+        if (genreIds.length > 0) {
+          params.genre_ids = genreIds.join(",");
         }
 
         let data;
@@ -114,7 +121,11 @@ export default function CatalogPage() {
         setTotalPages(data.total_pages || 1);
       } catch (error) {
         console.error("Ошибка загрузки каталога:", error);
-        if (!cancelled) setItems([]);
+        if (!cancelled) {
+          setItems([]);
+          setTotalPages(1);
+          setError("Не удалось загрузить каталог. Попробуйте ещё раз.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -122,7 +133,7 @@ export default function CatalogPage() {
 
     loadContent();
     return () => { cancelled = true; };
-  }, [mediaType, selectedGenre, page]);
+  }, [mediaType, selectedGenreKey, page, sortBy, selectedGenres]);
 
   // Сброс страницы при смене фильтров
   const handleMediaTypeChange = (type) => {
@@ -130,8 +141,26 @@ export default function CatalogPage() {
     setPage(1);
   };
 
-  const handleGenreChange = (genreId) => {
-    setSelectedGenre(genreId === selectedGenre ? null : genreId);
+  const handleGenreChange = (index, genreId) => {
+    setSelectedGenres((current) => {
+      if (!genreId) {
+        return current.slice(0, index);
+      }
+
+      const next = current.slice(0, index + 1);
+      next[index] = genreId;
+
+      if (next.length < 5) {
+        next.push("");
+      }
+
+      return next;
+    });
+    setPage(1);
+  };
+
+  const handleSortChange = (nextSort) => {
+    setSortBy(nextSort);
     setPage(1);
   };
 
@@ -146,7 +175,7 @@ export default function CatalogPage() {
   };
 
   return (
-    <div className="catalog-page-shell flex flex-col min-h-screen bg-[var(--bg)]">
+      <div className="catalog-page-shell flex flex-col min-h-screen bg-[var(--bg)]">
       <Header />
 
       <div className="flex flex-1">
@@ -156,15 +185,19 @@ export default function CatalogPage() {
           <div className="catalog-page">
             {/* Заголовок */}
             <div className="catalog-page__header">
-              <h1 className="catalog-page__title">Каталог</h1>
+              <h1 className="catalog-page__title">{movieOnly ? "Фильмы" : tvOnly ? "Сериалы" : "Каталог"}</h1>
               <p className="catalog-page__subtitle">
-                Все фильмы и сериалы в одном месте
+                {movieOnly
+                  ? "Подберите фильм по жанрам и сортировке"
+                  : tvOnly
+                    ? "Подберите сериал по жанрам и сортировке"
+                    : "Все фильмы и сериалы в одном месте"}
               </p>
             </div>
 
             {/* Фильтры — тип медиа */}
             <div className="catalog-page__filters">
-              <div className="catalog-page__tabs">
+              {!movieOnly && !tvOnly && <div className="catalog-page__tabs">
                 {MEDIA_TABS.map((tab) => (
                   <button
                     key={tab.key}
@@ -176,33 +209,55 @@ export default function CatalogPage() {
                     {tab.label}
                   </button>
                 ))}
+              </div>}
+
+              <div className="catalog-page__sort" aria-label="Сортировка каталога">
+                <span className="catalog-page__control-label">Сортировка</span>
+                <button
+                  type="button"
+                  className={`catalog-page__sort-button ${sortBy === "year.desc" ? "catalog-page__sort-button--active" : ""}`}
+                  onClick={() => handleSortChange("year.desc")}
+                  aria-pressed={sortBy === "year.desc"}
+                >
+                  По новизне
+                </button>
+                <button
+                  type="button"
+                  className={`catalog-page__sort-button ${sortBy === "vote_average.desc" ? "catalog-page__sort-button--active" : ""}`}
+                  onClick={() => handleSortChange("vote_average.desc")}
+                  aria-pressed={sortBy === "vote_average.desc"}
+                >
+                  По рейтингу
+                </button>
               </div>
 
-              {/* Фильтр по жанрам */}
-              <div className="catalog-page__genres">
-                <button
-                  onClick={() => handleGenreChange(null)}
-                  className={`catalog-page__genre ${
-                    selectedGenre === null ? "catalog-page__genre--active" : ""
-                  }`}
-                >
-                  Все жанры
-                </button>
-                {genres.map((genre) => (
-                  <button
-                    key={genre.id}
-                    onClick={() => handleGenreChange(genre.id)}
-                    className={`catalog-page__genre ${
-                      selectedGenre === genre.id ? "catalog-page__genre--active" : ""
-                    }`}
-                  >
-                    {genre.name}
-                  </button>
-                ))}
+              <div className="catalog-page__genres" aria-label="Фильтр по жанрам">
+                {(selectedGenres.length > 0 ? selectedGenres : [""]).map((selectedGenre, index) => {
+                  const selectedElsewhere = new Set(selectedGenres.filter((genreId, genreIndex) => genreId && genreIndex !== index));
+                  const availableGenres = genres.filter((genre) => !selectedElsewhere.has(String(genre.id)) || String(genre.id) === selectedGenre);
+
+                  return (
+                    <label className="catalog-page__genre-field" key={`genre-field-${index}`}>
+                      <span className="catalog-page__control-label">Жанр {index + 1}</span>
+                      <select
+                        className="catalog-page__genre-select"
+                        value={selectedGenre}
+                        onChange={(event) => handleGenreChange(index, event.target.value)}
+                      >
+                        <option value="">{index === 0 ? "Все жанры" : "—"}</option>
+                        {availableGenres.map((genre) => (
+                          <option key={genre.id} value={genre.id}>{genre.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
             {/* Сетка карточек */}
+            {error && <div className="catalog-page__error" role="alert">{error}</div>}
+
             <div className="catalog-page__grid">
               {loading
                 ? Array.from({ length: 12 }).map((_, i) => (

@@ -71,44 +71,97 @@
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-/* Жанры — скролл-лента */
-.catalog-page__genres {
+/* Сортировка и последовательные жанровые фильтры */
+.catalog-page__sort {
   display: flex;
+  align-items: center;
   gap: 8px;
-  overflow-x: auto;
-  padding: 4px 0;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
-.catalog-page__genres::-webkit-scrollbar {
-  display: none;
-}
-
-.catalog-page__genre {
-  flex-shrink: 0;
-  padding: 6px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.55);
+.catalog-page__control-label {
+  color: rgba(255, 255, 255, 0.48);
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 700;
+}
+
+.catalog-page__sort-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.58);
   cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
-.catalog-page__genre:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.05);
+.catalog-page__sort-button:hover,
+.catalog-page__sort-button--active {
+  border-color: rgba(59, 130, 246, 0.7);
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
 }
 
-.catalog-page__genre--active {
-  border-color: var(--primary);
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--primary);
+.catalog-page__sort-button:focus-visible,
+.catalog-page__genre-select:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, 0.45);
+  outline-offset: 2px;
+}
+
+.catalog-page__genres {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.catalog-page__genre-field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.catalog-page__genre-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 34px 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  appearance: none;
+  background-color: rgba(255, 255, 255, 0.045);
+  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position: calc(100% - 16px) 19px, calc(100% - 11px) 19px;
+  background-repeat: no-repeat;
+  background-size: 5px 5px, 5px 5px;
+  color: #e2e8f0;
+  color-scheme: dark;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.catalog-page__genre-select option {
+  color: #f8fafc;
+  background: #0f172a;
+}
+
+.catalog-page__genre-select option:checked {
+  color: #fff;
+  background: #2563eb;
+}
+
+.catalog-page__error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.08);
+  color: #fbbf24;
+  font-size: 0.875rem;
 }
 
 /* ── Сетка карточек ─────────────────────────────────── */
@@ -216,16 +269,16 @@
 }
 
 @media (max-width: 768px) {
-  .catalog-page-shell > div > aside {
-    display: none;
-  }
-
   .catalog-page {
     padding: 20px 16px 0;
   }
 
   .catalog-page__title {
     font-size: 1.5rem;
+  }
+
+  .catalog-page__genres {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .catalog-page__grid {
@@ -241,5 +294,11 @@
   .catalog-page__page-btn {
     padding: 8px 16px;
     font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .catalog-page__genres {
+    grid-template-columns: 1fr;
   }
 }

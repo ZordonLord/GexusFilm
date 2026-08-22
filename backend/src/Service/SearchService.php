@@ -88,7 +88,9 @@ final class SearchService implements SearchServiceInterface
             'sort_by' => $criteria['sort_by'],
         ];
 
-        if (isset($criteria['genre_id'])) {
+        if (isset($criteria['genre_ids'])) {
+            $params['with_genres'] = implode(',', $criteria['genre_ids']);
+        } elseif (isset($criteria['genre_id'])) {
             $params['with_genres'] = $criteria['genre_id'];
         }
         if (isset($criteria['year'])) {

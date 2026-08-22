@@ -31,16 +31,22 @@ final class SearchController
     /** @param array<string, mixed> $params */
     public function discover(array $params): array
     {
-        $this->assertKnownParameters($params, ['type', 'genre_id', 'genre', 'year', 'min_rating', 'region', 'sort_by', 'page', 'per_page']);
+        $this->assertKnownParameters($params, ['type', 'genre_id', 'genre_ids', 'genre', 'year', 'min_rating', 'region', 'sort_by', 'page', 'per_page']);
 
-        if (isset($params['genre'], $params['genre_id'])) {
+        if (isset($params['genre'], $params['genre_id']) || isset($params['genre'], $params['genre_ids'])) {
             throw new ValidationException('Параметры запроса некорректны', [
-                ['field' => 'genre', 'issue' => 'genre and genre_id cannot be used together'],
+                ['field' => 'genre', 'issue' => 'genre cannot be used with genre_id or genre_ids'],
             ]);
         }
 
-        if (isset($params['genre']) && !isset($params['genre_id'])) {
+        if (isset($params['genre']) && !isset($params['genre_id']) && !isset($params['genre_ids'])) {
             $params['genre_id'] = $params['genre'];
+        }
+
+        if (isset($params['genre_id'], $params['genre_ids'])) {
+            throw new ValidationException('Параметры запроса некорректны', [
+                ['field' => 'genre_ids', 'issue' => 'genre_id and genre_ids cannot be used together'],
+            ]);
         }
 
         return $this->searchService->discover($this->criteria($params, false));
@@ -87,6 +93,10 @@ final class SearchController
             if (array_key_exists($field, $params)) {
                 $criteria[$field] = $this->integerParameter($params, $field, null, $minimum, $maximum);
             }
+        }
+
+        if (array_key_exists('genre_ids', $params)) {
+            $criteria['genre_ids'] = $this->integerListParameter($params, 'genre_ids', 5);
         }
 
         if (array_key_exists('min_rating', $params)) {
@@ -170,5 +180,35 @@ final class SearchController
             ]]);
         }
         return (float) $value;
+    }
+
+    /** @return list<int> */
+    private function integerListParameter(array $params, string $field, int $maximumItems): array
+    {
+        $value = $params[$field] ?? null;
+        if (!is_string($value) || trim($value) === '') {
+            throw new ValidationException('Параметры запроса некорректны', [[
+                'field' => $field, 'issue' => 'must be a comma-separated list of positive integers',
+            ]]);
+        }
+
+        $parts = array_map('trim', explode(',', $value));
+        if (count($parts) < 1 || count($parts) > $maximumItems || count($parts) !== count(array_unique($parts))) {
+            throw new ValidationException('Параметры запроса некорректны', [[
+                'field' => $field, 'issue' => 'must contain 1 to 5 unique genre IDs',
+            ]]);
+        }
+
+        $genreIds = [];
+        foreach ($parts as $part) {
+            if (preg_match('/^[1-9]\d*$/', $part) !== 1) {
+                throw new ValidationException('Параметры запроса некорректны', [[
+                    'field' => $field, 'issue' => 'must contain positive integers only',
+                ]]);
+            }
+            $genreIds[] = (int) $part;
+        }
+
+        return $genreIds;
     }
 }
