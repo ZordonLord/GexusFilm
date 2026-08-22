@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Repository\MovieRepository;
+use DateInterval;
+use DateTimeImmutable;
 
 class MovieService
 {
@@ -30,6 +32,22 @@ class MovieService
         return $data;
     }
 
+    public function getTrendingMoviesWeek(): array
+    {
+        $cacheKey = CacheKeyFactory::catalog('movie', 'trending-week');
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $data = $this->contentSource->getTrendingMoviesWeek();
+
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveMovieSummaries($data['results'] ?? []);
+
+        return $data;
+    }
+
     public function getPopularMovies(): array
     {
         $cacheKey = CacheKeyFactory::catalog('movie', 'popular');
@@ -39,6 +57,22 @@ class MovieService
         }
 
         $data = $this->contentSource->getPopularMovies();
+
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveMovieSummaries($data['results'] ?? []);
+
+        return $data;
+    }
+
+    public function getTopRatedMovies(): array
+    {
+        $cacheKey = CacheKeyFactory::catalog('movie', 'top-rated');
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $data = $this->contentSource->getTopRatedMovies();
 
         $this->saveCached($cacheKey, $data);
         $this->repository?->saveMovieSummaries($data['results'] ?? []);
@@ -71,6 +105,28 @@ class MovieService
         }
 
         $data = $this->contentSource->getUpcomingMovies();
+
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveMovieSummaries($data['results'] ?? []);
+
+        return $data;
+    }
+
+    public function getNewMovies(): array
+    {
+        $cacheKey = CacheKeyFactory::catalog('movie', 'new');
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $today = new DateTimeImmutable('today');
+        $data = $this->contentSource->discoverMovies([
+            'sort_by' => 'primary_release_date.desc',
+            'primary_release_date.gte' => $today->sub(new DateInterval('P365D'))->format('Y-m-d'),
+            'primary_release_date.lte' => $today->format('Y-m-d'),
+            'page' => 1,
+        ]);
 
         $this->saveCached($cacheKey, $data);
         $this->repository?->saveMovieSummaries($data['results'] ?? []);

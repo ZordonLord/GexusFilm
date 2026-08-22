@@ -23,6 +23,21 @@ class MovieController
         return $this->movieService->getPopularMovies();
     }
 
+    public function getTopRated(): array
+    {
+        return $this->movieService->getTopRatedMovies();
+    }
+
+    public function getTrendingWeek(): array
+    {
+        return $this->movieService->getTrendingMoviesWeek();
+    }
+
+    public function getNew(): array
+    {
+        return $this->movieService->getNewMovies();
+    }
+
     public function getNowPlaying(): array
     {
         return $this->movieService->getNowPlayingMovies();

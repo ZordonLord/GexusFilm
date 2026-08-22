@@ -17,9 +17,24 @@ class TvController
         return $this->tvService->getTrendingTv();
     }
 
+    public function getTrendingWeek(): array
+    {
+        return $this->tvService->getTrendingTvWeek();
+    }
+
     public function getPopular(): array
     {
         return $this->tvService->getPopularTv();
+    }
+
+    public function getTopRated(): array
+    {
+        return $this->tvService->getTopRatedTv();
+    }
+
+    public function getNew(): array
+    {
+        return $this->tvService->getNewTv();
     }
 
     public function getOnTheAir(): array

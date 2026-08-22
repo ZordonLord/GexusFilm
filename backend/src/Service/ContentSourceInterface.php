@@ -20,9 +20,19 @@ interface ContentSourceInterface
     public function getPopularMovies(): array;
 
     /**
+     * Фильмы с самым высоким рейтингом.
+     */
+    public function getTopRatedMovies(): array;
+
+    /**
      * Трендовые фильмы за день.
      */
     public function getTrendingMoviesDay(): array;
+
+    /**
+     * Трендовые фильмы за неделю.
+     */
+    public function getTrendingMoviesWeek(): array;
 
     /**
      * Фильмы, идущие сейчас в кинотеатрах.
@@ -62,9 +72,19 @@ interface ContentSourceInterface
     public function getTrendingTvDay(): array;
 
     /**
+     * Трендовые сериалы за неделю.
+     */
+    public function getTrendingTvWeek(): array;
+
+    /**
      * Популярные сериалы.
      */
     public function getPopularTv(): array;
+
+    /**
+     * Сериалы с самым высоким рейтингом.
+     */
+    public function getTopRatedTv(): array;
 
     /**
      * Сериалы, идущие в эфире.

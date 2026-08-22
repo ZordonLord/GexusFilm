@@ -92,9 +92,19 @@ class TmdbClient implements ContentSourceInterface
         return $this->request('/movie/popular');
     }
 
+    public function getTopRatedMovies(): array
+    {
+        return $this->request('/movie/top_rated');
+    }
+
     public function getTrendingMoviesDay(): array
     {
         return $this->request('/trending/movie/day');
+    }
+
+    public function getTrendingMoviesWeek(): array
+    {
+        return $this->request('/trending/movie/week');
     }
 
     public function getNowPlayingMovies(): array
@@ -134,9 +144,19 @@ class TmdbClient implements ContentSourceInterface
         return $this->request('/trending/tv/day');
     }
 
+    public function getTrendingTvWeek(): array
+    {
+        return $this->request('/trending/tv/week');
+    }
+
     public function getPopularTv(): array
     {
         return $this->request('/tv/popular');
+    }
+
+    public function getTopRatedTv(): array
+    {
+        return $this->request('/tv/top_rated');
     }
 
     public function getOnTheAirTv(): array

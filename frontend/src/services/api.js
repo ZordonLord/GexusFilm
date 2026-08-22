@@ -22,6 +22,15 @@ export const getTrendingMovies = () =>
 export const getPopularMovies = () =>
   request("/movies/popular");
 
+export const getTopRatedMovies = () =>
+  request("/movies/top-rated");
+
+export const getTrendingMoviesWeek = () =>
+  request("/movies/trending-week");
+
+export const getNewMovies = () =>
+  request("/movies/new");
+
 export const getNowPlayingMovies = () =>
   request("/movies/now-playing");
 
@@ -47,6 +56,15 @@ export const getTrendingTv = () =>
 
 export const getPopularTv = () =>
   request("/tv-shows/popular");
+
+export const getTopRatedTv = () =>
+  request("/tv-shows/top-rated");
+
+export const getTrendingTvWeek = () =>
+  request("/tv-shows/trending-week");
+
+export const getNewTv = () =>
+  request("/tv-shows/new");
 
 export const getOnTheAirTv = () =>
   request("/tv-shows/on-the-air");

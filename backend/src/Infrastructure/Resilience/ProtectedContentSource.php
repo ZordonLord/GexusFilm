@@ -24,9 +24,19 @@ final class ProtectedContentSource implements ContentSourceInterface
         return $this->run(__FUNCTION__, [], fn (): array => $this->source->getPopularMovies());
     }
 
+    public function getTopRatedMovies(): array
+    {
+        return $this->run(__FUNCTION__, [], fn (): array => $this->source->getTopRatedMovies());
+    }
+
     public function getTrendingMoviesDay(): array
     {
         return $this->run(__FUNCTION__, [], fn (): array => $this->source->getTrendingMoviesDay());
+    }
+
+    public function getTrendingMoviesWeek(): array
+    {
+        return $this->run(__FUNCTION__, [], fn (): array => $this->source->getTrendingMoviesWeek());
     }
 
     public function getNowPlayingMovies(): array
@@ -64,9 +74,19 @@ final class ProtectedContentSource implements ContentSourceInterface
         return $this->run(__FUNCTION__, [], fn (): array => $this->source->getTrendingTvDay());
     }
 
+    public function getTrendingTvWeek(): array
+    {
+        return $this->run(__FUNCTION__, [], fn (): array => $this->source->getTrendingTvWeek());
+    }
+
     public function getPopularTv(): array
     {
         return $this->run(__FUNCTION__, [], fn (): array => $this->source->getPopularTv());
+    }
+
+    public function getTopRatedTv(): array
+    {
+        return $this->run(__FUNCTION__, [], fn (): array => $this->source->getTopRatedTv());
     }
 
     public function getOnTheAirTv(): array

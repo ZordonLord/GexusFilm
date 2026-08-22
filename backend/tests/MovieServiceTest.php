@@ -25,11 +25,25 @@ final class MovieServiceTest extends TestCase
         self::assertSame('Popular Movie', $data['results'][0]['title']);
     }
 
+    public function testGetTopRatedMoviesReturnsResultsFromSource(): void
+    {
+        $data = $this->service->getTopRatedMovies();
+
+        self::assertSame('Top Rated Movie', $data['results'][0]['title']);
+    }
+
     public function testGetTrendingMoviesReturnsResultsFromSource(): void
     {
         $data = $this->service->getTrendingMovies();
 
         self::assertSame('Trending Movie', $data['results'][0]['title']);
+    }
+
+    public function testGetTrendingMoviesWeekReturnsResultsFromSource(): void
+    {
+        $data = $this->service->getTrendingMoviesWeek();
+
+        self::assertSame('Weekly Trending Movie', $data['results'][0]['title']);
     }
 
     public function testGetNowPlayingMoviesReturnsResultsFromSource(): void
@@ -44,6 +58,13 @@ final class MovieServiceTest extends TestCase
         $data = $this->service->getUpcomingMovies();
 
         self::assertSame('Upcoming Movie', $data['results'][0]['title']);
+    }
+
+    public function testGetNewMoviesReturnsDiscoverResultsFromSource(): void
+    {
+        $data = $this->service->getNewMovies();
+
+        self::assertSame('Discovered Movie', $data['results'][0]['title']);
     }
 
     public function testGetMovieDetailsReturnsDataFromSource(): void

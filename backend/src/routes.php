@@ -43,6 +43,24 @@ function createRouter(): Router
         json_response($data);
     });
 
+    // Фильмы с самым высоким рейтингом
+    $router->get('/api/movies/top-rated', static function (array $params) use ($movieController): void {
+        $data = $movieController->getTopRated();
+        json_response($data);
+    });
+
+    // Фильмы в тренде за неделю
+    $router->get('/api/movies/trending-week', static function (array $params) use ($movieController): void {
+        $data = $movieController->getTrendingWeek();
+        json_response($data);
+    });
+
+    // Новые фильмы за последние 365 дней
+    $router->get('/api/movies/new', static function (array $params) use ($movieController): void {
+        $data = $movieController->getNew();
+        json_response($data);
+    });
+
     // Фильмы в кинотеатрах сейчас
     $router->get('/api/movies/now-playing', static function (array $params) use ($movieController): void {
         $data = $movieController->getNowPlaying();
@@ -70,9 +88,27 @@ function createRouter(): Router
         json_response($data);
     });
 
+    // Сериалы в тренде за неделю
+    $router->get('/api/tv-shows/trending-week', static function (array $params) use ($tvController): void {
+        $data = $tvController->getTrendingWeek();
+        json_response($data);
+    });
+
     // Популярные сериалы
     $router->get('/api/tv-shows/popular', static function (array $params) use ($tvController): void {
         $data = $tvController->getPopular();
+        json_response($data);
+    });
+
+    // Сериалы с самым высоким рейтингом
+    $router->get('/api/tv-shows/top-rated', static function (array $params) use ($tvController): void {
+        $data = $tvController->getTopRated();
+        json_response($data);
+    });
+
+    // Новые сериалы за последние 365 дней
+    $router->get('/api/tv-shows/new', static function (array $params) use ($tvController): void {
+        $data = $tvController->getNew();
         json_response($data);
     });
 

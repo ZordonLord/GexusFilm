@@ -24,12 +24,33 @@ final class TvServiceTest extends TestCase
         self::assertSame('Trending TV', $data['results'][0]['name']);
     }
 
+    public function testGetTrendingTvWeekReturnsResultsFromSource(): void
+    {
+        $data = $this->service->getTrendingTvWeek();
+
+        self::assertSame('Weekly Trending TV', $data['results'][0]['name']);
+    }
+
     public function testGetPopularTvReturnsResultsFromSource(): void
     {
         $data = $this->service->getPopularTv();
 
         self::assertSame(1, $data['total_results']);
         self::assertSame('Popular TV', $data['results'][0]['name']);
+    }
+
+    public function testGetTopRatedTvReturnsResultsFromSource(): void
+    {
+        $data = $this->service->getTopRatedTv();
+
+        self::assertSame('Top Rated TV', $data['results'][0]['name']);
+    }
+
+    public function testGetNewTvReturnsDiscoverResultsFromSource(): void
+    {
+        $data = $this->service->getNewTv();
+
+        self::assertSame('Discovered TV', $data['results'][0]['name']);
     }
 
     public function testGetOnTheAirTvReturnsResultsFromSource(): void

@@ -20,9 +20,19 @@ final class StubContentSource implements ContentSourceInterface
         return $this->listResponse([['id' => 1, 'title' => 'Popular Movie']]);
     }
 
+    public function getTopRatedMovies(): array
+    {
+        return $this->listResponse([['id' => 7, 'title' => 'Top Rated Movie']]);
+    }
+
     public function getTrendingMoviesDay(): array
     {
         return $this->listResponse([['id' => 2, 'title' => 'Trending Movie']]);
+    }
+
+    public function getTrendingMoviesWeek(): array
+    {
+        return $this->listResponse([['id' => 8, 'title' => 'Weekly Trending Movie']]);
     }
 
     public function getNowPlayingMovies(): array
@@ -67,9 +77,19 @@ final class StubContentSource implements ContentSourceInterface
         return $this->listResponse([['id' => 10, 'name' => 'Trending TV']]);
     }
 
+    public function getTrendingTvWeek(): array
+    {
+        return $this->listResponse([['id' => 16, 'name' => 'Weekly Trending TV']]);
+    }
+
     public function getPopularTv(): array
     {
         return $this->listResponse([['id' => 11, 'name' => 'Popular TV']]);
+    }
+
+    public function getTopRatedTv(): array
+    {
+        return $this->listResponse([['id' => 17, 'name' => 'Top Rated TV']]);
     }
 
     public function getOnTheAirTv(): array

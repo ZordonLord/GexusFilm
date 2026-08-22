@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Repository\MovieRepository;
+use DateInterval;
+use DateTimeImmutable;
 
 class TvService
 {
@@ -30,6 +32,22 @@ class TvService
         return $data;
     }
 
+    public function getTrendingTvWeek(): array
+    {
+        $cacheKey = CacheKeyFactory::catalog('tv', 'trending-week');
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $data = $this->contentSource->getTrendingTvWeek();
+
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
+
+        return $data;
+    }
+
     public function getPopularTv(): array
     {
         $cacheKey = CacheKeyFactory::catalog('tv', 'popular');
@@ -39,6 +57,44 @@ class TvService
         }
 
         $data = $this->contentSource->getPopularTv();
+
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
+
+        return $data;
+    }
+
+    public function getTopRatedTv(): array
+    {
+        $cacheKey = CacheKeyFactory::catalog('tv', 'top-rated');
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $data = $this->contentSource->getTopRatedTv();
+
+        $this->saveCached($cacheKey, $data);
+        $this->repository?->saveTvSummaries($data['results'] ?? []);
+
+        return $data;
+    }
+
+    public function getNewTv(): array
+    {
+        $cacheKey = CacheKeyFactory::catalog('tv', 'new');
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $today = new DateTimeImmutable('today');
+        $data = $this->contentSource->discoverTv([
+            'sort_by' => 'first_air_date.desc',
+            'first_air_date.gte' => $today->sub(new DateInterval('P365D'))->format('Y-m-d'),
+            'first_air_date.lte' => $today->format('Y-m-d'),
+            'page' => 1,
+        ]);
 
         $this->saveCached($cacheKey, $data);
         $this->repository?->saveTvSummaries($data['results'] ?? []);
