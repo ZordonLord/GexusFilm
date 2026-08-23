@@ -6,8 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
-import MediaCard from "../components/MediaCard";
-import SkeletonCard from "../components/SkeletonCard";
+import MediaBrowser, { MediaToolbar } from "../components/MediaBrowser";
 
 import {
   getDiscoverMovies,
@@ -15,7 +14,6 @@ import {
   getMovieGenres,
   getTvGenres,
 } from "../services/api";
-import { getMediaKey } from "../utils/media";
 import {
   CATALOG_DEFAULT_SORT,
   parseCatalogParams,
@@ -37,15 +35,14 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     fallbackType: catalogType,
     defaultSort: CATALOG_DEFAULT_SORT,
   }), [catalogType, searchParams]);
-  const { genreIds: selectedGenres, page, sortBy, mediaType } = {
-    ...urlState,
-    mediaType: urlState.type,
-  };
+  const { genreIds: selectedGenres, page, sortBy, perPage } = urlState;
+  const mediaType = urlState.type;
   const [items, setItems] = useState([]);
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [totalPages, setTotalPages] = useState(1);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const updateUrl = useCallback((changes) => {
     const nextParams = updateCatalogParams(searchParams, changes, {
@@ -92,7 +89,7 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
       setError("");
 
       try {
-        const params = { page, per_page: urlState.perPage, sort_by: sortBy };
+        const params = { page, per_page: perPage, sort_by: sortBy };
         const genreIds = selectedGenres.filter(Boolean);
         if (genreIds.length > 0) {
           params.genre_ids = genreIds.join(",");
@@ -151,7 +148,7 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
 
     loadContent();
     return () => { cancelled = true; };
-  }, [mediaType, page, selectedGenres, sortBy, urlState]);
+  }, [mediaType, page, perPage, selectedGenres, sortBy, urlState, reloadKey]);
 
   // Сброс страницы при смене фильтров
   const handleMediaTypeChange = (type) => {
@@ -169,13 +166,8 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     updateUrl({ sort_by: nextSort, page: "" });
   };
 
-  const handlePrevPage = () => {
-    updateUrl({ page: Math.max(1, page - 1) });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleNextPage = () => {
-    updateUrl({ page: Math.min(totalPages, page + 1) });
+  const handlePageChange = (nextPage) => {
+    updateUrl({ page: nextPage });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -201,7 +193,7 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
             </div>
 
             {/* Фильтры — тип медиа */}
-            <div className="catalog-page__filters">
+            <MediaToolbar className="catalog-page__filters" aria-label="Фильтры каталога">
               {!movieOnly && !tvOnly && <div className="catalog-page__tabs">
                 {MEDIA_TABS.map((tab) => (
                   <button
@@ -258,75 +250,22 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
                   );
                 })}
               </div>
-            </div>
+            </MediaToolbar>
 
-            {/* Сетка карточек */}
-            {error && <div className="catalog-page__error" role="alert">{error}</div>}
-
-            <div className="catalog-page__grid">
-              {loading
-                ? Array.from({ length: 12 }).map((_, i) => (
-                    <SkeletonCard key={`skeleton-${i}`} />
-                  ))
-                : items.length > 0
-                  ? items.map((item) => {
-                      const key = getMediaKey(item, mediaType);
-
-                      if (!key) {
-                        return null;
-                      }
-
-                      return (
-                        <MediaCard
-                          key={key}
-                          item={item}
-                          mediaType={item.media_type || mediaType}
-                        />
-                      );
-                    })
-                  : (
-                    <div className="catalog-page__empty">
-                      <svg className="catalog-page__empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <p className="catalog-page__empty-text">Ничего не найдено</p>
-                      <p className="catalog-page__empty-hint">Попробуйте изменить фильтры</p>
-                    </div>
-                  )}
-            </div>
-
-            {/* Пагинация */}
-            {!loading && items.length > 0 && (
-              <div className="catalog-page__pagination">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={page <= 1}
-                  className="catalog-page__page-btn"
-                  aria-label="Предыдущая страница"
-                >
-                  <svg className="catalog-page__page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Назад
-                </button>
-
-                <span className="catalog-page__page-info">
-                  Страница {page} из {totalPages}
-                </span>
-
-                <button
-                  onClick={handleNextPage}
-                  disabled={page >= totalPages}
-                  className="catalog-page__page-btn"
-                  aria-label="Следующая страница"
-                >
-                  Вперёд
-                  <svg className="catalog-page__page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            )}
+            <MediaBrowser
+              items={items}
+              loading={loading}
+              error={error}
+              onRetry={() => setReloadKey((key) => key + 1)}
+              mediaType={mediaType}
+              page={page}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              emptyTitle="Ничего не найдено"
+              emptyMessage="Попробуйте изменить фильтры."
+              errorTitle="Не получилось загрузить каталог"
+              variant="catalog"
+            />
           </div>
 
           <Footer />

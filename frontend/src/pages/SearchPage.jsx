@@ -6,8 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
-import MediaCard from "../components/MediaCard";
-import SkeletonCard from "../components/SkeletonCard";
+import MediaBrowser, { MediaToolbar } from "../components/MediaBrowser";
 import {
   getDiscoverMovies,
   getDiscoverTv,
@@ -15,7 +14,6 @@ import {
   getSearch,
   getTvGenres,
 } from "../services/api";
-import { getMediaKey } from "../utils/media";
 import {
   DEFAULT_SORT,
   SORT_OPTIONS,
@@ -194,7 +192,7 @@ export default function SearchPage() {
             setSearchParams={setSearchParams}
           />
 
-          <section className="search-page__filters" aria-labelledby="filters-heading">
+            <MediaToolbar className="search-page__filters" aria-labelledby="filters-heading">
             <div className="search-page__filters-head">
               <h2 id="filters-heading">Фильтры</h2>
               <span>{activeFiltersCount ? `${activeFiltersCount} активно` : "Настройте выдачу"}</span>
@@ -254,62 +252,24 @@ export default function SearchPage() {
                 <input type="text" maxLength="2" inputMode="text" placeholder="RU" value={urlState.region} onChange={(event) => updateUrl({ region: event.target.value.toUpperCase(), page: "" })} />
               </label>
             </div>
-          </section>
+            </MediaToolbar>
 
-          <div className="search-page__results-head" aria-live="polite">
-            <h2>{urlState.query ? "Найдено" : "Подборка"}</h2>
-            {!loading && !error && items.length > 0 && <span>{totalResults} результатов</span>}
-          </div>
-
-          {error ? (
-            <div className="search-page__state search-page__state--error" role="alert">
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.3 3.85 2.6 17a2 2 0 0 0 1.74 3h15.32a2 2 0 0 0 1.74-3l-7.7-13.15a2 2 0 0 0-3.4 0Z" />
-              </svg>
-              <h2>Не получилось загрузить результаты</h2>
-              <p>{error}</p>
-              <button type="button" onClick={() => setReloadKey((key) => key + 1)}>Повторить</button>
-            </div>
-          ) : (
-            <div className="search-page__grid">
-              {loading
-                ? Array.from({ length: 12 }).map((_, index) => <SkeletonCard key={`search-skeleton-${index}`} />)
-                : items.length > 0
-                  ? items.map((item) => {
-                      const mediaType = item.media_type || "movie";
-                      const key = getMediaKey(item, mediaType);
-
-                      if (!key) {
-                        return null;
-                      }
-
-                      return <MediaCard key={key} item={item} mediaType={mediaType} />;
-                    })
-                  : (
-                    <div className="search-page__state search-page__state--empty">
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35m2.1-5.15a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z" />
-                      </svg>
-                      <h2>{urlState.query ? "Ничего не нашли" : "Подборка пока пуста"}</h2>
-                      <p>{urlState.query ? "Проверьте написание или попробуйте более общий запрос." : "Измените фильтры — и здесь появятся подходящие фильмы и сериалы."}</p>
-                    </div>
-                  )}
-            </div>
-          )}
-
-          {!loading && !error && items.length > 0 && totalPages > 1 && (
-            <nav className="search-page__pagination" aria-label="Пагинация результатов">
-              <button type="button" onClick={() => handlePageChange(Math.max(1, urlState.page - 1))} disabled={urlState.page <= 1}>
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" /></svg>
-                Назад
-              </button>
-              <span>Страница {urlState.page} из {totalPages}</span>
-              <button type="button" onClick={() => handlePageChange(Math.min(totalPages, urlState.page + 1))} disabled={urlState.page >= totalPages}>
-                Вперёд
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" /></svg>
-              </button>
-            </nav>
-          )}
+          <MediaBrowser
+            items={items}
+            loading={loading}
+            error={error}
+            onRetry={() => setReloadKey((key) => key + 1)}
+            mediaType={urlState.type}
+            resultsTitle={urlState.query ? "Найдено" : "Подборка"}
+            totalResults={totalResults}
+            page={urlState.page}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            emptyTitle={urlState.query ? "Ничего не нашли" : "Подборка пока пуста"}
+            emptyMessage={urlState.query ? "Проверьте написание или попробуйте более общий запрос." : "Измените фильтры — и здесь появятся подходящие фильмы и сериалы."}
+            errorTitle="Не получилось загрузить результаты"
+            variant="search"
+          />
 
           <Footer />
         </main>
