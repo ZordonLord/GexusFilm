@@ -55,4 +55,22 @@ final class SearchServiceTest extends TestCase
 
         self::assertSame('vote_average.desc', $source->lastDiscoverMovieParams['sort_by']);
     }
+
+    public function testExcludedGenresUseTmdbWithoutGenresParameter(): void
+    {
+        $source = new StubContentSource();
+        $service = new SearchService($source, new SearchRepository(null));
+
+        $service->discover([
+            'type' => 'movie',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+            'genre_ids' => [28, 12],
+            'exclude_genre_ids' => [27, 10749],
+        ]);
+
+        self::assertSame('28,12', $source->lastDiscoverMovieParams['with_genres']);
+        self::assertSame('27,10749', $source->lastDiscoverMovieParams['without_genres']);
+    }
 }

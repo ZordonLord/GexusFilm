@@ -93,6 +93,9 @@ final class SearchService implements SearchServiceInterface
         } elseif (isset($criteria['genre_id'])) {
             $params['with_genres'] = $criteria['genre_id'];
         }
+        if (isset($criteria['exclude_genre_ids'])) {
+            $params['without_genres'] = implode(',', $criteria['exclude_genre_ids']);
+        }
         if (isset($criteria['year'])) {
             $params[$criteria['type'] === 'tv' ? 'first_air_date_year' : 'primary_release_year'] = $criteria['year'];
         }

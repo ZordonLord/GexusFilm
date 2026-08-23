@@ -470,6 +470,16 @@ class MovieRepository
             $params['genre_ids'] = json_encode([(int) $criteria['genre_id']], JSON_THROW_ON_ERROR);
         }
 
+        if (isset($criteria['exclude_genre_ids'])) {
+            $excludedConditions = [];
+            foreach ($criteria['exclude_genre_ids'] as $index => $genreId) {
+                $parameter = 'exclude_genre_id_' . $index;
+                $excludedConditions[] = "genre_ids @> CAST(:$parameter AS jsonb)";
+                $params[$parameter] = json_encode([(int) $genreId], JSON_THROW_ON_ERROR);
+            }
+            $where[] = 'NOT (' . implode(' OR ', $excludedConditions) . ')';
+        }
+
         if (isset($criteria['year'])) {
             $where[] = 'release_date >= :year_start AND release_date < :year_end';
             $params['year_start'] = sprintf('%d-01-01', $criteria['year']);

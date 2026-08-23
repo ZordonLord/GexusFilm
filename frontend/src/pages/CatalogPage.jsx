@@ -6,7 +6,8 @@ import { useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
-import MediaBrowser, { MediaToolbar } from "../components/MediaBrowser";
+import MediaBrowser from "../components/MediaBrowser";
+import MediaFilterToolbar from "../components/MediaFilterToolbar";
 
 import {
   getDiscoverMovies,
@@ -22,12 +23,6 @@ import {
 
 import "../styles/CatalogPage.css";
 
-const MEDIA_TABS = [
-  { key: "all", label: "Всё" },
-  { key: "movie", label: "Фильмы" },
-  { key: "tv", label: "Сериалы" },
-];
-
 export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
   const catalogType = movieOnly ? "movie" : tvOnly ? "tv" : "all";
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,7 +30,16 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     fallbackType: catalogType,
     defaultSort: CATALOG_DEFAULT_SORT,
   }), [catalogType, searchParams]);
-  const { genreIds: selectedGenres, page, sortBy, perPage } = urlState;
+  const {
+    genreIds: selectedGenres,
+    excludedGenreIds,
+    year,
+    minRating,
+    region,
+    page,
+    sortBy,
+    perPage,
+  } = urlState;
   const mediaType = urlState.type;
   const [items, setItems] = useState([]);
   const [genres, setGenres] = useState([]);
@@ -91,9 +95,13 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
       try {
         const params = { page, per_page: perPage, sort_by: sortBy };
         const genreIds = selectedGenres.filter(Boolean);
-        if (genreIds.length > 0) {
-          params.genre_ids = genreIds.join(",");
+        if (genreIds.length > 0) params.genre_ids = genreIds.join(",");
+        if (excludedGenreIds.length > 0) {
+          params.exclude_genre_ids = excludedGenreIds.join(",");
         }
+        if (year) params.year = year;
+        if (minRating) params.min_rating = minRating;
+        if (region) params.region = region;
 
         let data;
 
@@ -148,18 +156,34 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
 
     loadContent();
     return () => { cancelled = true; };
-  }, [mediaType, page, perPage, selectedGenres, sortBy, urlState, reloadKey]);
+  }, [mediaType, page, perPage, selectedGenres, excludedGenreIds, year, minRating, region, sortBy, reloadKey]);
 
   // Сброс страницы при смене фильтров
   const handleMediaTypeChange = (type) => {
     updateUrl({ type, page: "" });
   };
 
-  const handleGenreChange = (index, genreId) => {
-    const nextGenres = selectedGenres.slice(0, index);
-    if (genreId) nextGenres.push(genreId);
+  const handleGenresChange = ({ includedIds, excludedIds }) => {
+    updateUrl({
+      genre_ids: includedIds.join(","),
+      exclude_genre_ids: excludedIds.join(","),
+      genre_id: "",
+      page: "",
+    });
+  };
 
-    updateUrl({ genre_ids: nextGenres.join(","), genre_id: "", page: "" });
+  const activeFiltersCount = [
+    !movieOnly && !tvOnly && mediaType !== "all",
+    selectedGenres.length > 0,
+    excludedGenreIds.length > 0,
+    year,
+    minRating,
+    region,
+    sortBy !== CATALOG_DEFAULT_SORT,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
   const handleSortChange = (nextSort) => {
@@ -192,65 +216,28 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
               </p>
             </div>
 
-            {/* Фильтры — тип медиа */}
-            <MediaToolbar className="catalog-page__filters" aria-label="Фильтры каталога">
-              {!movieOnly && !tvOnly && <div className="catalog-page__tabs">
-                {MEDIA_TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => handleMediaTypeChange(tab.key)}
-                    className={`catalog-page__tab ${
-                      mediaType === tab.key ? "catalog-page__tab--active" : ""
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>}
-
-              <div className="catalog-page__sort" aria-label="Сортировка каталога">
-                <span className="catalog-page__control-label">Сортировка</span>
-                <button
-                  type="button"
-                  className={`catalog-page__sort-button ${sortBy === "year.desc" ? "catalog-page__sort-button--active" : ""}`}
-                  onClick={() => handleSortChange("year.desc")}
-                  aria-pressed={sortBy === "year.desc"}
-                >
-                  По новизне
-                </button>
-                <button
-                  type="button"
-                  className={`catalog-page__sort-button ${sortBy === "vote_average.desc" ? "catalog-page__sort-button--active" : ""}`}
-                  onClick={() => handleSortChange("vote_average.desc")}
-                  aria-pressed={sortBy === "vote_average.desc"}
-                >
-                  По рейтингу
-                </button>
-              </div>
-
-              <div className="catalog-page__genres" aria-label="Фильтр по жанрам">
-                {(selectedGenres.length > 0 ? [...selectedGenres, ""] : [""]).map((selectedGenre, index) => {
-                  const selectedElsewhere = new Set(selectedGenres.filter((genreId, genreIndex) => genreId && genreIndex !== index));
-                  const availableGenres = genres.filter((genre) => !selectedElsewhere.has(String(genre.id)) || String(genre.id) === selectedGenre);
-
-                  return (
-                    <label className="catalog-page__genre-field" key={`genre-field-${index}`}>
-                      <span className="catalog-page__control-label">Жанр {index + 1}</span>
-                      <select
-                        className="catalog-page__genre-select"
-                        value={selectedGenre}
-                        onChange={(event) => handleGenreChange(index, event.target.value)}
-                      >
-                        <option value="">{index === 0 ? "Все жанры" : "—"}</option>
-                        {availableGenres.map((genre) => (
-                          <option key={genre.id} value={genre.id}>{genre.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                  );
-                })}
-              </div>
-            </MediaToolbar>
+            <MediaFilterToolbar
+              className="catalog-page__filters"
+              heading="Фильтры каталога"
+              activeFiltersCount={activeFiltersCount}
+              onReset={clearFilters}
+              type={mediaType}
+              onTypeChange={handleMediaTypeChange}
+              showType={!movieOnly && !tvOnly}
+              sortBy={sortBy}
+              onSortChange={handleSortChange}
+              genres={genres}
+              includedIds={selectedGenres}
+              excludedIds={excludedGenreIds}
+              onGenresChange={handleGenresChange}
+              year={year}
+              onYearChange={(value) => updateUrl({ year: value, page: "" })}
+              minRating={minRating}
+              onMinRatingChange={(value) => updateUrl({ min_rating: value, page: "" })}
+              region={region}
+              onRegionChange={(value) => updateUrl({ region: value, page: "" })}
+              idPrefix="catalog-filter"
+            />
 
             <MediaBrowser
               items={items}

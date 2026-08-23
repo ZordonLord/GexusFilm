@@ -46,6 +46,7 @@ export function parseCatalogParams(searchParams, { fallbackType = "all", default
   const perPageParam = Number.parseInt(searchParams.get("per_page") || "20", 10);
   const explicitGenreId = searchParams.get("genre_id") || "";
   const genreIds = parseGenreIds(searchParams.get("genre_ids"));
+  const excludedGenreIds = parseGenreIds(searchParams.get("exclude_genre_ids"));
 
   if (genreIds.length === 0 && /^\d+$/.test(explicitGenreId) && explicitGenreId !== "0") {
     genreIds.push(explicitGenreId);
@@ -56,6 +57,7 @@ export function parseCatalogParams(searchParams, { fallbackType = "all", default
     type: fallbackType === "all" && ALLOWED_TYPES.has(typeParam) ? typeParam : fallbackType,
     genreId: explicitGenreId,
     genreIds,
+    excludedGenreIds,
     year: searchParams.get("year") || "",
     minRating: searchParams.get("min_rating") || "",
     region: searchParams.get("region")?.toUpperCase() || "",

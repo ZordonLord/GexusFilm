@@ -6,7 +6,8 @@ import { useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
-import MediaBrowser, { MediaToolbar } from "../components/MediaBrowser";
+import MediaBrowser from "../components/MediaBrowser";
+import MediaFilterToolbar from "../components/MediaFilterToolbar";
 import {
   getDiscoverMovies,
   getDiscoverTv,
@@ -16,8 +17,6 @@ import {
 } from "../services/api";
 import {
   DEFAULT_SORT,
-  SORT_OPTIONS,
-  TYPE_OPTIONS,
   parseCatalogParams,
   updateCatalogParams,
 } from "../utils/catalogFilters";
@@ -105,11 +104,16 @@ export default function SearchPage() {
       if (urlState.year) commonParams.year = urlState.year;
       if (urlState.minRating) commonParams.min_rating = urlState.minRating;
       if (urlState.region) commonParams.region = urlState.region;
+      if (!urlState.query && urlState.genreIds.length > 0) {
+        commonParams.genre_ids = urlState.genreIds.join(",");
+      }
+      if (!urlState.query && urlState.excludedGenreIds.length > 0) {
+        commonParams.exclude_genre_ids = urlState.excludedGenreIds.join(",");
+      }
 
       try {
         const requests = types.map((type) => {
           const params = { ...commonParams, type };
-          if (!urlState.query && urlState.genreId) params.genre_id = urlState.genreId;
 
           return urlState.query
             ? getSearch(urlState.query, params)
@@ -141,7 +145,8 @@ export default function SearchPage() {
 
   const activeFiltersCount = [
     urlState.type !== "all",
-    urlState.genreId,
+    urlState.genreIds.length > 0,
+    urlState.excludedGenreIds.length > 0,
     urlState.year,
     urlState.minRating,
     urlState.region,
@@ -155,6 +160,15 @@ export default function SearchPage() {
 
   const clearFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true });
+  };
+
+  const handleGenresChange = ({ includedIds, excludedIds }) => {
+    updateUrl({
+      genre_ids: includedIds.join(","),
+      exclude_genre_ids: excludedIds.join(","),
+      genre_id: "",
+      page: "",
+    });
   };
 
   return (
@@ -178,11 +192,6 @@ export default function SearchPage() {
               </p>
             </div>
 
-            {activeFiltersCount > 0 && (
-              <button type="button" className="search-page__reset" onClick={clearFilters}>
-                Сбросить фильтры
-              </button>
-            )}
           </div>
 
           <SearchQueryForm
@@ -192,67 +201,29 @@ export default function SearchPage() {
             setSearchParams={setSearchParams}
           />
 
-            <MediaToolbar className="search-page__filters" aria-labelledby="filters-heading">
-            <div className="search-page__filters-head">
-              <h2 id="filters-heading">Фильтры</h2>
-              <span>{activeFiltersCount ? `${activeFiltersCount} активно` : "Настройте выдачу"}</span>
-            </div>
-
-            <div className="search-page__filter-grid">
-              <fieldset className="search-page__field search-page__field--type">
-                <legend>Тип контента</legend>
-                <div className="search-page__segmented">
-                  {TYPE_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={urlState.type === option.value ? "is-active" : ""}
-                      onClick={() => updateUrl({ type: option.value, page: "" })}
-                      aria-pressed={urlState.type === option.value}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              <label className="search-page__field">
-                <span>Сортировка</span>
-                <select value={urlState.sortBy} onChange={(event) => updateUrl({ sort_by: event.target.value, page: "" })}>
-                  {SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
-
-              <label className="search-page__field">
-                <span>Жанр</span>
-                <select
-                  value={urlState.genreId}
-                  onChange={(event) => updateUrl({ genre_id: event.target.value, page: "" })}
-                  disabled={Boolean(urlState.query)}
-                  aria-describedby={urlState.query ? "genre-help" : undefined}
-                >
-                  <option value="">Все жанры</option>
-                  {genres.map((genre) => <option key={genre.id} value={genre.id}>{genre.name}</option>)}
-                </select>
-                {urlState.query && <small id="genre-help">Жанр доступен для подбора без поискового запроса.</small>}
-              </label>
-
-              <label className="search-page__field">
-                <span>Год выпуска</span>
-                <input type="number" min="1870" max="2100" inputMode="numeric" placeholder="Например, 2024" value={urlState.year} onChange={(event) => updateUrl({ year: event.target.value, page: "" })} />
-              </label>
-
-              <label className="search-page__field">
-                <span>Рейтинг от</span>
-                <input type="number" min="0" max="10" step="0.5" inputMode="decimal" placeholder="0–10" value={urlState.minRating} onChange={(event) => updateUrl({ min_rating: event.target.value, page: "" })} />
-              </label>
-
-              <label className="search-page__field">
-                <span>Регион</span>
-                <input type="text" maxLength="2" inputMode="text" placeholder="RU" value={urlState.region} onChange={(event) => updateUrl({ region: event.target.value.toUpperCase(), page: "" })} />
-              </label>
-            </div>
-            </MediaToolbar>
+          <MediaFilterToolbar
+            className="search-page__filters"
+            heading="Фильтры"
+            activeFiltersCount={activeFiltersCount}
+            onReset={clearFilters}
+            type={urlState.type}
+            onTypeChange={(value) => updateUrl({ type: value, page: "" })}
+            sortBy={urlState.sortBy}
+            onSortChange={(value) => updateUrl({ sort_by: value, page: "" })}
+            genres={genres}
+            includedIds={urlState.genreIds}
+            excludedIds={urlState.excludedGenreIds}
+            onGenresChange={handleGenresChange}
+            genreDisabled={Boolean(urlState.query)}
+            genreDisabledMessage={urlState.query ? "Жанр доступен для подборки без поискового запроса." : ""}
+            year={urlState.year}
+            onYearChange={(value) => updateUrl({ year: value, page: "" })}
+            minRating={urlState.minRating}
+            onMinRatingChange={(value) => updateUrl({ min_rating: value, page: "" })}
+            region={urlState.region}
+            onRegionChange={(value) => updateUrl({ region: value, page: "" })}
+            idPrefix="search-filter"
+          />
 
           <MediaBrowser
             items={items}

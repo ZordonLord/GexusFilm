@@ -31,11 +31,11 @@ final class SearchController
     /** @param array<string, mixed> $params */
     public function discover(array $params): array
     {
-        $this->assertKnownParameters($params, ['type', 'genre_id', 'genre_ids', 'genre', 'year', 'min_rating', 'region', 'sort_by', 'page', 'per_page']);
+        $this->assertKnownParameters($params, ['type', 'genre_id', 'genre_ids', 'exclude_genre_ids', 'genre', 'year', 'min_rating', 'region', 'sort_by', 'page', 'per_page']);
 
-        if (isset($params['genre'], $params['genre_id']) || isset($params['genre'], $params['genre_ids'])) {
+        if (isset($params['genre'], $params['genre_id']) || isset($params['genre'], $params['genre_ids']) || isset($params['genre'], $params['exclude_genre_ids'])) {
             throw new ValidationException('Параметры запроса некорректны', [
-                ['field' => 'genre', 'issue' => 'genre cannot be used with genre_id or genre_ids'],
+                ['field' => 'genre', 'issue' => 'genre cannot be used with included or excluded genre IDs'],
             ]);
         }
 
@@ -97,6 +97,18 @@ final class SearchController
 
         if (array_key_exists('genre_ids', $params)) {
             $criteria['genre_ids'] = $this->integerListParameter($params, 'genre_ids', 5);
+        }
+
+        if (array_key_exists('exclude_genre_ids', $params)) {
+            $criteria['exclude_genre_ids'] = $this->integerListParameter($params, 'exclude_genre_ids', 5);
+        }
+
+        $includedGenreIds = $criteria['genre_ids'] ?? (isset($criteria['genre_id']) ? [$criteria['genre_id']] : []);
+        $excludedGenreIds = $criteria['exclude_genre_ids'] ?? [];
+        if (array_intersect($includedGenreIds, $excludedGenreIds) !== []) {
+            throw new ValidationException('Параметры запроса некорректны', [[
+                'field' => 'exclude_genre_ids', 'issue' => 'a genre cannot be included and excluded at the same time',
+            ]]);
         }
 
         if (array_key_exists('min_rating', $params)) {
