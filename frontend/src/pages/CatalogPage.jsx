@@ -1,6 +1,7 @@
 // Страница каталога — все фильмы и сериалы с фильтрацией
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
@@ -15,6 +16,11 @@ import {
   getTvGenres,
 } from "../services/api";
 import { getMediaKey } from "../utils/media";
+import {
+  CATALOG_DEFAULT_SORT,
+  parseCatalogParams,
+  updateCatalogParams,
+} from "../utils/catalogFilters";
 
 import "../styles/CatalogPage.css";
 
@@ -26,16 +32,28 @@ const MEDIA_TABS = [
 
 export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
   const catalogType = movieOnly ? "movie" : tvOnly ? "tv" : "all";
-  const [mediaType, setMediaType] = useState(catalogType);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlState = useMemo(() => parseCatalogParams(searchParams, {
+    fallbackType: catalogType,
+    defaultSort: CATALOG_DEFAULT_SORT,
+  }), [catalogType, searchParams]);
+  const { genreIds: selectedGenres, page, sortBy, mediaType } = {
+    ...urlState,
+    mediaType: urlState.type,
+  };
   const [items, setItems] = useState([]);
   const [genres, setGenres] = useState([]);
-  const [selectedGenres, setSelectedGenres] = useState([]);
-  const [sortBy, setSortBy] = useState("year.desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const selectedGenreKey = selectedGenres.join(",");
+
+  const updateUrl = useCallback((changes) => {
+    const nextParams = updateCatalogParams(searchParams, changes, {
+      defaultSort: CATALOG_DEFAULT_SORT,
+      defaultType: catalogType,
+    });
+    setSearchParams(nextParams, { replace: true });
+  }, [catalogType, searchParams, setSearchParams]);
 
   // Загрузка жанров
   useEffect(() => {
@@ -74,7 +92,7 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
       setError("");
 
       try {
-        const params = { page, sort_by: sortBy };
+        const params = { page, per_page: urlState.perPage, sort_by: sortBy };
         const genreIds = selectedGenres.filter(Boolean);
         if (genreIds.length > 0) {
           params.genre_ids = genreIds.join(",");
@@ -133,44 +151,31 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
 
     loadContent();
     return () => { cancelled = true; };
-  }, [mediaType, selectedGenreKey, page, sortBy, selectedGenres]);
+  }, [mediaType, page, selectedGenres, sortBy, urlState]);
 
   // Сброс страницы при смене фильтров
   const handleMediaTypeChange = (type) => {
-    setMediaType(type);
-    setPage(1);
+    updateUrl({ type, page: "" });
   };
 
   const handleGenreChange = (index, genreId) => {
-    setSelectedGenres((current) => {
-      if (!genreId) {
-        return current.slice(0, index);
-      }
+    const nextGenres = selectedGenres.slice(0, index);
+    if (genreId) nextGenres.push(genreId);
 
-      const next = current.slice(0, index + 1);
-      next[index] = genreId;
-
-      if (next.length < 5) {
-        next.push("");
-      }
-
-      return next;
-    });
-    setPage(1);
+    updateUrl({ genre_ids: nextGenres.join(","), genre_id: "", page: "" });
   };
 
   const handleSortChange = (nextSort) => {
-    setSortBy(nextSort);
-    setPage(1);
+    updateUrl({ sort_by: nextSort, page: "" });
   };
 
   const handlePrevPage = () => {
-    setPage((p) => Math.max(1, p - 1));
+    updateUrl({ page: Math.max(1, page - 1) });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleNextPage = () => {
-    setPage((p) => Math.min(totalPages, p + 1));
+    updateUrl({ page: Math.min(totalPages, page + 1) });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -232,7 +237,7 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
               </div>
 
               <div className="catalog-page__genres" aria-label="Фильтр по жанрам">
-                {(selectedGenres.length > 0 ? selectedGenres : [""]).map((selectedGenre, index) => {
+                {(selectedGenres.length > 0 ? [...selectedGenres, ""] : [""]).map((selectedGenre, index) => {
                   const selectedElsewhere = new Set(selectedGenres.filter((genreId, genreIndex) => genreId && genreIndex !== index));
                   const availableGenres = genres.filter((genre) => !selectedElsewhere.has(String(genre.id)) || String(genre.id) === selectedGenre);
 

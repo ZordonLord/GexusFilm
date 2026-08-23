@@ -11,16 +11,15 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isOpen, toggleSidebar } = useSidebar();
+  const currentQuery = location.pathname === "/search"
+    ? new URLSearchParams(location.search).get("q") || ""
+    : "";
 
   const handleSearch = (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     navigate(buildSearchPath(formData.get("q")));
   };
-
-  const currentQuery = location.pathname === "/search"
-    ? new URLSearchParams(location.search).get("q") || ""
-    : "";
 
   return (
     <header className="site-header">
@@ -77,6 +76,7 @@ export default function Header() {
             id="site-search"
             name="q"
             type="search"
+            key={currentQuery}
             defaultValue={currentQuery}
             placeholder="Поиск фильмов и сериалов..."
             className="site-header__search-input"

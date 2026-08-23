@@ -85,7 +85,7 @@ final class SearchService implements SearchServiceInterface
     {
         $params = [
             'page' => $criteria['page'],
-            'sort_by' => $criteria['sort_by'],
+            'sort_by' => $this->sourceSort($criteria),
         ];
 
         if (isset($criteria['genre_ids'])) {
@@ -108,6 +108,25 @@ final class SearchService implements SearchServiceInterface
             : $this->contentSource->discoverMovies($params);
 
         return $this->normalizeResponse($result, (int) $criteria['page']);
+    }
+
+    /**
+     * Внутреннее year-сокращение сохраняет API-контракт, но TMDB требует
+     * разные поля даты для фильмов и сериалов.
+     *
+     * @param array<string, mixed> $criteria
+     */
+    private function sourceSort(array $criteria): string
+    {
+        $sort = (string) $criteria['sort_by'];
+
+        if ($sort === 'year.desc' || $sort === 'year.asc') {
+            $field = $criteria['type'] === 'tv' ? 'first_air_date' : 'primary_release_date';
+
+            return $field . ($sort === 'year.desc' ? '.desc' : '.asc');
+        }
+
+        return $sort;
     }
 
     /** @param array<string, mixed> $response */

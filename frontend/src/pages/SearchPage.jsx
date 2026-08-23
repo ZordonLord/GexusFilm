@@ -16,56 +16,16 @@ import {
   getTvGenres,
 } from "../services/api";
 import { getMediaKey } from "../utils/media";
-import { normalizeSearchQuery } from "../utils/search";
+import {
+  DEFAULT_SORT,
+  SORT_OPTIONS,
+  TYPE_OPTIONS,
+  parseCatalogParams,
+  updateCatalogParams,
+} from "../utils/catalogFilters";
+import SearchQueryForm from "../components/SearchQueryForm";
 
 import "../styles/SearchPage.css";
-
-const DEFAULT_SORT = "popularity.desc";
-const ALLOWED_TYPES = new Set(["all", "movie", "tv"]);
-const ALLOWED_SORTS = new Set([
-  "popularity.desc",
-  "popularity.asc",
-  "vote_average.desc",
-  "vote_average.asc",
-  "year.desc",
-  "year.asc",
-]);
-
-const SORT_OPTIONS = [
-  { value: "popularity.desc", label: "Сначала популярные" },
-  { value: "popularity.asc", label: "Сначала менее популярные" },
-  { value: "vote_average.desc", label: "По рейтингу: сначала выше" },
-  { value: "vote_average.asc", label: "По рейтингу: сначала ниже" },
-  { value: "year.desc", label: "Сначала новые" },
-  { value: "year.asc", label: "Сначала старые" },
-];
-
-const TYPE_OPTIONS = [
-  { value: "all", label: "Всё" },
-  { value: "movie", label: "Фильмы" },
-  { value: "tv", label: "Сериалы" },
-];
-
-function parseSearchParams(searchParams) {
-  const typeParam = searchParams.get("type");
-  const sortParam = searchParams.get("sort_by");
-  const pageParam = Number.parseInt(searchParams.get("page") || "1", 10);
-  const perPageParam = Number.parseInt(searchParams.get("per_page") || "20", 10);
-
-  return {
-    query: normalizeSearchQuery(searchParams.get("q")),
-    type: ALLOWED_TYPES.has(typeParam) ? typeParam : "all",
-    genreId: searchParams.get("genre_id") || "",
-    year: searchParams.get("year") || "",
-    minRating: searchParams.get("min_rating") || "",
-    region: searchParams.get("region")?.toUpperCase() || "",
-    sortBy: ALLOWED_SORTS.has(sortParam) ? sortParam : DEFAULT_SORT,
-    page: Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1,
-    perPage: Number.isInteger(perPageParam) && perPageParam >= 1 && perPageParam <= 50
-      ? perPageParam
-      : 20,
-  };
-}
 
 function getErrorMessage(error) {
   return error?.response?.data?.error?.message
@@ -91,8 +51,7 @@ function mergeResponses(responses, types) {
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlState = useMemo(() => parseSearchParams(searchParams), [searchParams]);
-  const [queryInput, setQueryInput] = useState(urlState.query);
+  const urlState = useMemo(() => parseCatalogParams(searchParams), [searchParams]);
   const [items, setItems] = useState([]);
   const [genres, setGenres] = useState([]);
   const [totalPages, setTotalPages] = useState(0);
@@ -101,36 +60,8 @@ export default function SearchPage() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    if (queryInput.trim() === urlState.query) return undefined;
-
-    const timer = window.setTimeout(() => {
-      const nextParams = new URLSearchParams(searchParams);
-      const nextQuery = normalizeSearchQuery(queryInput);
-
-      if (nextQuery) {
-        nextParams.set("q", nextQuery);
-      } else {
-        nextParams.delete("q");
-      }
-      nextParams.delete("page");
-      setSearchParams(nextParams, { replace: true });
-    }, 350);
-
-    return () => window.clearTimeout(timer);
-  }, [queryInput, searchParams, setSearchParams, urlState.query]);
-
   const updateUrl = useCallback((changes) => {
-    const nextParams = new URLSearchParams(searchParams);
-
-    Object.entries(changes).forEach(([key, value]) => {
-      if (value === "" || value === null || value === undefined || value === "all" || (key === "sort_by" && value === DEFAULT_SORT)) {
-        nextParams.delete(key);
-      } else {
-        nextParams.set(key, String(value));
-      }
-    });
-
+    const nextParams = updateCatalogParams(searchParams, changes, { defaultSort: DEFAULT_SORT });
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -219,26 +150,12 @@ export default function SearchPage() {
     urlState.sortBy !== DEFAULT_SORT,
   ].filter(Boolean).length;
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const nextQuery = normalizeSearchQuery(queryInput);
-
-    if (nextQuery) {
-      updateUrl({ q: nextQuery, page: "" });
-      return;
-    }
-
-    // Пустой запрос переключает экран на подборку, а не отправляет q в API.
-    setSearchParams(new URLSearchParams(), { replace: true });
-  };
-
   const handlePageChange = (page) => {
     updateUrl({ page });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const clearFilters = () => {
-    setQueryInput("");
     setSearchParams(new URLSearchParams(), { replace: true });
   };
 
@@ -270,35 +187,12 @@ export default function SearchPage() {
             )}
           </div>
 
-          <form className="search-page__search-form" onSubmit={handleSubmit} role="search">
-            <label className="search-page__search-label" htmlFor="catalog-search">Поиск по названию</label>
-            <div className="search-page__search-row">
-              <div className="search-page__input-wrap">
-                <svg aria-hidden="true" className="search-page__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35m2.1-5.15a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z" />
-                </svg>
-                <input
-                  id="catalog-search"
-                  type="search"
-                  value={queryInput}
-                  onChange={(event) => setQueryInput(event.target.value)}
-                  placeholder="Например, Интерстеллар или Dark..."
-                  maxLength={200}
-                  autoComplete="off"
-                  aria-describedby="search-help"
-                />
-                {queryInput && (
-                  <button type="button" className="search-page__clear" onClick={() => setQueryInput("")} aria-label="Очистить поиск">
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" d="M6 6l12 12M18 6 6 18" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-              <button type="submit" className="search-page__submit">Найти</button>
-            </div>
-            <p className="search-page__help" id="search-help">Результаты обновляются автоматически после короткой паузы.</p>
-          </form>
+          <SearchQueryForm
+            key={urlState.query}
+            query={urlState.query}
+            searchParams={searchParams}
+            setSearchParams={setSearchParams}
+          />
 
           <section className="search-page__filters" aria-labelledby="filters-heading">
             <div className="search-page__filters-head">

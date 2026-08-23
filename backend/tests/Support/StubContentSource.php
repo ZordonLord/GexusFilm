@@ -13,6 +13,12 @@ use App\Service\ContentSourceInterface;
  */
 final class StubContentSource implements ContentSourceInterface
 {
+    /** @var array<string, mixed> */
+    public array $lastDiscoverMovieParams = [];
+
+    /** @var array<string, mixed> */
+    public array $lastDiscoverTvParams = [];
+
     // ── Movies ──────────────────────────────────────────────
 
     public function getPopularMovies(): array
@@ -52,6 +58,8 @@ final class StubContentSource implements ContentSourceInterface
 
     public function discoverMovies(array $params = []): array
     {
+        $this->lastDiscoverMovieParams = $params;
+
         return $this->listResponse([['id' => 5, 'title' => 'Discovered Movie']]);
     }
 
@@ -137,6 +145,8 @@ final class StubContentSource implements ContentSourceInterface
 
     public function discoverTv(array $params = []): array
     {
+        $this->lastDiscoverTvParams = $params;
+
         return $this->listResponse([['id' => 15, 'name' => 'Discovered TV']]);
     }
 
