@@ -96,6 +96,12 @@ final class SearchService implements SearchServiceInterface
         if (isset($criteria['exclude_genre_ids'])) {
             $params['without_genres'] = implode(',', $criteria['exclude_genre_ids']);
         }
+        if (isset($criteria['year_from'])) {
+            $params[$criteria['type'] === 'tv' ? 'first_air_date.gte' : 'primary_release_date.gte'] = $criteria['year_from'] . '-01-01';
+        }
+        if (isset($criteria['year_to'])) {
+            $params[$criteria['type'] === 'tv' ? 'first_air_date.lte' : 'primary_release_date.lte'] = $criteria['year_to'] . '-12-31';
+        }
         if (isset($criteria['year'])) {
             $params[$criteria['type'] === 'tv' ? 'first_air_date_year' : 'primary_release_year'] = $criteria['year'];
         }
@@ -104,6 +110,30 @@ final class SearchService implements SearchServiceInterface
         }
         if (($criteria['region'] ?? null) !== null) {
             $params['region'] = $criteria['region'];
+        }
+        if (isset($criteria['date_from'])) {
+            $params[$criteria['type'] === 'tv' ? 'first_air_date.gte' : 'primary_release_date.gte'] = $criteria['date_from'];
+        }
+        if (isset($criteria['date_to'])) {
+            $params[$criteria['type'] === 'tv' ? 'first_air_date.lte' : 'primary_release_date.lte'] = $criteria['date_to'];
+        }
+        if (isset($criteria['vote_count.gte'])) {
+            $params['vote_count.gte'] = $criteria['vote_count.gte'];
+        }
+        if (isset($criteria['language'])) {
+            $params['with_original_language'] = $criteria['language'];
+        }
+        if (isset($criteria['country'])) {
+            $params['with_origin_country'] = $criteria['country'];
+        }
+        if (isset($criteria['watch_region'])) {
+            $params['watch_region'] = $criteria['watch_region'];
+        }
+        if (isset($criteria['with_watch_providers'])) {
+            $params['with_watch_providers'] = implode('|', $criteria['with_watch_providers']);
+        }
+        if (isset($criteria['with_watch_monetization_types'])) {
+            $params['with_watch_monetization_types'] = implode('|', $criteria['with_watch_monetization_types']);
         }
 
         $result = $criteria['type'] === 'tv'

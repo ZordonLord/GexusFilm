@@ -17,6 +17,8 @@ import {
 } from "../services/api";
 import {
   DEFAULT_SORT,
+  YEAR_MAX,
+  YEAR_MIN,
   parseCatalogParams,
   updateCatalogParams,
 } from "../utils/catalogFilters";
@@ -103,13 +105,16 @@ export default function SearchPage() {
 
       if (urlState.year) commonParams.year = urlState.year;
       if (urlState.minRating) commonParams.min_rating = urlState.minRating;
-      if (urlState.region) commonParams.region = urlState.region;
+      if (!urlState.query && urlState.yearFrom) commonParams.year_from = urlState.yearFrom;
+      if (!urlState.query && urlState.yearTo) commonParams.year_to = urlState.yearTo;
       if (!urlState.query && urlState.genreIds.length > 0) {
         commonParams.genre_ids = urlState.genreIds.join(",");
       }
       if (!urlState.query && urlState.excludedGenreIds.length > 0) {
         commonParams.exclude_genre_ids = urlState.excludedGenreIds.join(",");
       }
+      if (!urlState.query && urlState.voteCountGte) commonParams.vote_count_gte = urlState.voteCountGte;
+      if (!urlState.query && urlState.country) commonParams.country = urlState.country;
 
       try {
         const requests = types.map((type) => {
@@ -149,7 +154,9 @@ export default function SearchPage() {
     urlState.excludedGenreIds.length > 0,
     urlState.year,
     urlState.minRating,
-    urlState.region,
+    urlState.yearFrom || urlState.yearTo,
+    urlState.voteCountGte,
+    urlState.country,
     urlState.sortBy !== DEFAULT_SORT,
   ].filter(Boolean).length;
 
@@ -167,6 +174,15 @@ export default function SearchPage() {
       genre_ids: includedIds.join(","),
       exclude_genre_ids: excludedIds.join(","),
       genre_id: "",
+      page: "",
+    });
+  };
+
+  const handleYearRangeChange = ({ from, to }) => {
+    updateUrl({
+      year: "",
+      year_from: from === YEAR_MIN ? "" : from,
+      year_to: to === YEAR_MAX ? "" : to,
       page: "",
     });
   };
@@ -216,12 +232,16 @@ export default function SearchPage() {
             onGenresChange={handleGenresChange}
             genreDisabled={Boolean(urlState.query)}
             genreDisabledMessage={urlState.query ? "Жанр доступен для подборки без поискового запроса." : ""}
-            year={urlState.year}
-            onYearChange={(value) => updateUrl({ year: value, page: "" })}
+            discoverOnlyDisabled={Boolean(urlState.query)}
+            yearFrom={urlState.yearFrom || urlState.year}
+            yearTo={urlState.yearTo || urlState.year}
+            onYearRangeChange={handleYearRangeChange}
             minRating={urlState.minRating}
             onMinRatingChange={(value) => updateUrl({ min_rating: value, page: "" })}
-            region={urlState.region}
-            onRegionChange={(value) => updateUrl({ region: value, page: "" })}
+            voteCountGte={urlState.voteCountGte}
+            onVoteCountGteChange={(value) => updateUrl({ vote_count_gte: value, "vote_count.gte": "", page: "" })}
+            country={urlState.country}
+            onCountryChange={(value) => updateUrl({ country: value, page: "" })}
             idPrefix="search-filter"
           />
 

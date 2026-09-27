@@ -2,6 +2,8 @@ import { normalizeSearchQuery } from "./search";
 
 export const DEFAULT_SORT = "popularity.desc";
 export const CATALOG_DEFAULT_SORT = "year.desc";
+export const YEAR_MIN = 1870;
+export const YEAR_MAX = new Date().getFullYear();
 
 export const ALLOWED_TYPES = new Set(["all", "movie", "tv"]);
 
@@ -29,7 +31,7 @@ export const TYPE_OPTIONS = [
   { value: "tv", label: "Сериалы" },
 ];
 
-function parseGenreIds(value) {
+function parsePositiveIds(value) {
   if (!value) return [];
 
   return value
@@ -45,8 +47,9 @@ export function parseCatalogParams(searchParams, { fallbackType = "all", default
   const pageParam = Number.parseInt(searchParams.get("page") || "1", 10);
   const perPageParam = Number.parseInt(searchParams.get("per_page") || "20", 10);
   const explicitGenreId = searchParams.get("genre_id") || "";
-  const genreIds = parseGenreIds(searchParams.get("genre_ids"));
-  const excludedGenreIds = parseGenreIds(searchParams.get("exclude_genre_ids"));
+  const genreIds = parsePositiveIds(searchParams.get("genre_ids"));
+  const excludedGenreIds = parsePositiveIds(searchParams.get("exclude_genre_ids"));
+  const legacyYear = searchParams.get("year") || "";
 
   if (genreIds.length === 0 && /^\d+$/.test(explicitGenreId) && explicitGenreId !== "0") {
     genreIds.push(explicitGenreId);
@@ -57,10 +60,14 @@ export function parseCatalogParams(searchParams, { fallbackType = "all", default
     type: fallbackType === "all" && ALLOWED_TYPES.has(typeParam) ? typeParam : fallbackType,
     genreId: explicitGenreId,
     genreIds,
+    yearFrom: searchParams.get("year_from") || "",
+    yearTo: searchParams.get("year_to") || "",
     excludedGenreIds,
-    year: searchParams.get("year") || "",
+    year: legacyYear,
     minRating: searchParams.get("min_rating") || "",
     region: searchParams.get("region")?.toUpperCase() || "",
+    voteCountGte: searchParams.get("vote_count_gte") || searchParams.get("vote_count.gte") || "",
+    country: searchParams.get("country")?.toUpperCase() || "",
     sortBy: ALLOWED_SORTS.has(sortParam) ? sortParam : defaultSort,
     page: Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1,
     perPage: Number.isInteger(perPageParam) && perPageParam >= 1 && perPageParam <= 50

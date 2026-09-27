@@ -1,6 +1,6 @@
 import { MediaToolbar } from "./MediaBrowser";
 import GenreFilter from "./GenreFilter";
-import { SORT_OPTIONS, TYPE_OPTIONS } from "../utils/catalogFilters";
+import { SORT_OPTIONS, TYPE_OPTIONS, YEAR_MAX, YEAR_MIN } from "../utils/catalogFilters";
 
 import "../styles/MediaFilterToolbar.css";
 
@@ -19,16 +19,26 @@ export default function MediaFilterToolbar({
   onGenresChange,
   genreDisabled = false,
   genreDisabledMessage = "",
-  year = "",
-  onYearChange,
+  discoverOnlyDisabled = false,
+  yearFrom = "",
+  yearTo = "",
+  onYearRangeChange,
   minRating = "",
   onMinRatingChange,
-  region = "",
-  onRegionChange,
+  voteCountGte = "",
+  onVoteCountGteChange,
+  country = "",
+  onCountryChange,
   idPrefix = "media-filter",
   className = "",
 }) {
   const headingId = `${idPrefix}-heading`;
+  const selectedYearFrom = Number.parseInt(yearFrom, 10) || YEAR_MIN;
+  const selectedYearTo = Number.parseInt(yearTo, 10) || YEAR_MAX;
+  const yearOptions = Array.from(
+    { length: YEAR_MAX - YEAR_MIN + 1 },
+    (_, index) => YEAR_MIN + index,
+  );
 
   return (
     <MediaToolbar
@@ -90,18 +100,43 @@ export default function MediaFilterToolbar({
           />
         </div>
 
-        <label className="media-filter-toolbar__field">
-          <span>Год выпуска</span>
-          <input
-            type="number"
-            min="1870"
-            max="2100"
-            inputMode="numeric"
-            placeholder="Например, 2024"
-            value={year}
-            onChange={(event) => onYearChange?.(event.target.value)}
-          />
-        </label>
+        <fieldset className="media-filter-toolbar__field media-filter-toolbar__field--years" disabled={discoverOnlyDisabled}>
+          <legend>Годы выпуска</legend>
+          <div className="media-filter-toolbar__year-fields">
+            <label htmlFor={`${idPrefix}-year-from`}>
+              <span>Год от</span>
+              <select
+                id={`${idPrefix}-year-from`}
+                name={`${idPrefix}-year-from`}
+                value={selectedYearFrom}
+                onChange={(event) => onYearRangeChange?.({
+                  from: Number(event.target.value),
+                  to: selectedYearTo,
+                })}
+              >
+                {yearOptions
+                  .filter((year) => year <= selectedYearTo)
+                  .map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </label>
+            <label htmlFor={`${idPrefix}-year-to`}>
+              <span>Год до</span>
+              <select
+                id={`${idPrefix}-year-to`}
+                name={`${idPrefix}-year-to`}
+                value={selectedYearTo}
+                onChange={(event) => onYearRangeChange?.({
+                  from: selectedYearFrom,
+                  to: Number(event.target.value),
+                })}
+              >
+                {yearOptions
+                  .filter((year) => year >= selectedYearFrom)
+                  .map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </label>
+          </div>
+        </fieldset>
 
         <label className="media-filter-toolbar__field">
           <span>Рейтинг от</span>
@@ -118,14 +153,30 @@ export default function MediaFilterToolbar({
         </label>
 
         <label className="media-filter-toolbar__field">
-          <span>Регион</span>
+          <span>Голосов от</span>
+          <input
+            type="number"
+            disabled={discoverOnlyDisabled}
+            min="0"
+            max="1000000000"
+            step="1"
+            inputMode="numeric"
+            placeholder="Например, 200"
+            value={voteCountGte}
+            onChange={(event) => onVoteCountGteChange?.(event.target.value)}
+          />
+        </label>
+
+        <label className="media-filter-toolbar__field">
+          <span>Страна происхождения</span>
           <input
             type="text"
+            disabled={discoverOnlyDisabled}
             maxLength="2"
             inputMode="text"
-            placeholder="RU"
-            value={region}
-            onChange={(event) => onRegionChange?.(event.target.value.toUpperCase())}
+            placeholder="US"
+            value={country}
+            onChange={(event) => onCountryChange?.(event.target.value.toUpperCase())}
           />
         </label>
       </div>

@@ -115,6 +115,28 @@
   background: #0f172a;
 }
 
+.media-filter-toolbar__field--years {
+  grid-column: span 2;
+}
+
+.media-filter-toolbar__year-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.media-filter-toolbar__year-fields label {
+  display: grid;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.media-filter-toolbar__year-fields select {
+  min-height: 44px;
+}
+
 .media-filter-toolbar__segmented {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -175,7 +197,8 @@
   }
 
   .media-filter-toolbar__field--type,
-  .media-filter-toolbar__field--genre {
+  .media-filter-toolbar__field--genre,
+  .media-filter-toolbar__field--years {
     grid-column: span 2;
   }
 }
@@ -195,7 +218,8 @@
   }
 
   .media-filter-toolbar__field--type,
-  .media-filter-toolbar__field--genre {
+  .media-filter-toolbar__field--genre,
+  .media-filter-toolbar__field--years {
     grid-column: auto;
   }
 }

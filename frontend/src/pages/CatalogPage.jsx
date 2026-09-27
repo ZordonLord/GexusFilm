@@ -17,6 +17,8 @@ import {
 } from "../services/api";
 import {
   CATALOG_DEFAULT_SORT,
+  YEAR_MAX,
+  YEAR_MIN,
   parseCatalogParams,
   updateCatalogParams,
 } from "../utils/catalogFilters";
@@ -34,8 +36,11 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     genreIds: selectedGenres,
     excludedGenreIds,
     year,
+    yearFrom,
+    yearTo,
     minRating,
-    region,
+    voteCountGte,
+    country,
     page,
     sortBy,
     perPage,
@@ -101,7 +106,10 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
         }
         if (year) params.year = year;
         if (minRating) params.min_rating = minRating;
-        if (region) params.region = region;
+        if (yearFrom) params.year_from = yearFrom;
+        if (yearTo) params.year_to = yearTo;
+        if (voteCountGte) params.vote_count_gte = voteCountGte;
+        if (country) params.country = country;
 
         let data;
 
@@ -156,7 +164,7 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
 
     loadContent();
     return () => { cancelled = true; };
-  }, [mediaType, page, perPage, selectedGenres, excludedGenreIds, year, minRating, region, sortBy, reloadKey]);
+  }, [mediaType, page, perPage, selectedGenres, excludedGenreIds, year, yearFrom, yearTo, minRating, voteCountGte, country, sortBy, reloadKey]);
 
   // Сброс страницы при смене фильтров
   const handleMediaTypeChange = (type) => {
@@ -176,9 +184,10 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     !movieOnly && !tvOnly && mediaType !== "all",
     selectedGenres.length > 0,
     excludedGenreIds.length > 0,
-    year,
     minRating,
-    region,
+    voteCountGte,
+    country,
+    yearFrom || yearTo || year,
     sortBy !== CATALOG_DEFAULT_SORT,
   ].filter(Boolean).length;
 
@@ -188,6 +197,15 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
 
   const handleSortChange = (nextSort) => {
     updateUrl({ sort_by: nextSort, page: "" });
+  };
+
+  const handleYearRangeChange = ({ from, to }) => {
+    updateUrl({
+      year: "",
+      year_from: from === YEAR_MIN ? "" : from,
+      year_to: to === YEAR_MAX ? "" : to,
+      page: "",
+    });
   };
 
   const handlePageChange = (nextPage) => {
@@ -230,12 +248,14 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
               includedIds={selectedGenres}
               excludedIds={excludedGenreIds}
               onGenresChange={handleGenresChange}
-              year={year}
-              onYearChange={(value) => updateUrl({ year: value, page: "" })}
+              yearFrom={yearFrom || year}
+              yearTo={yearTo || year}
+              onYearRangeChange={handleYearRangeChange}
               minRating={minRating}
               onMinRatingChange={(value) => updateUrl({ min_rating: value, page: "" })}
-              region={region}
-              onRegionChange={(value) => updateUrl({ region: value, page: "" })}
+              onVoteCountGteChange={(value) => updateUrl({ vote_count_gte: value, "vote_count.gte": "", page: "" })}
+              country={country}
+              onCountryChange={(value) => updateUrl({ country: value, page: "" })}
               idPrefix="catalog-filter"
             />
 

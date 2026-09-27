@@ -32,11 +32,40 @@ final class SearchRepository
      */
     public function discover(array $criteria): ?array
     {
-        if (($criteria['region'] ?? null) !== null) {
+        if ($this->requiresRemoteDiscover($criteria)) {
             return null;
         }
 
         return $this->discoverPostgres($criteria);
+    }
+
+    /**
+     * Локальная схема не хранит язык, страну и доступность у провайдеров.
+     * Нельзя возвращать частично отфильтрованный локальный результат.
+     *
+     * @param array<string, mixed> $criteria
+     */
+    private function requiresRemoteDiscover(array $criteria): bool
+    {
+        $remoteFields = [
+            'region',
+            'date_from',
+            'date_to',
+            'vote_count.gte',
+            'language',
+            'country',
+            'watch_region',
+            'with_watch_providers',
+            'with_watch_monetization_types',
+        ];
+
+        foreach ($remoteFields as $field) {
+            if (array_key_exists($field, $criteria)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $criteria */
