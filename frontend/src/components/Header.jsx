@@ -1,5 +1,6 @@
 // Верхняя панель с логотипом, поиском и кнопкой авторизации
 
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { buildSearchPath } from "../utils/search";
@@ -11,6 +12,8 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isOpen, toggleSidebar } = useSidebar();
+  const [isHidden, setIsHidden] = useState(false);
+  const lastScrollY = useRef(0);
   const currentQuery = location.pathname === "/search"
     ? new URLSearchParams(location.search).get("q") || ""
     : "";
@@ -21,8 +24,34 @@ export default function Header() {
     navigate(buildSearchPath(formData.get("q")));
   };
 
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+
+      window.requestAnimationFrame(() => {
+        const nextScrollY = window.scrollY;
+        const delta = nextScrollY - lastScrollY.current;
+
+        if (nextScrollY <= 12 || delta < -8) {
+          setIsHidden(false);
+        } else if (delta > 8) {
+          setIsHidden(true);
+        }
+
+        lastScrollY.current = nextScrollY;
+        ticking = false;
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="site-header">
+    <header className={`site-header ${isHidden ? "site-header--hidden" : ""}`}>
       {/* Левая часть — логотип */}
       <div className="site-header__brand">
         <button

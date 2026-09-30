@@ -1,6 +1,6 @@
 // Hero-секция главной страницы — большой баннер с трендовым контентом
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   getMediaId,
@@ -10,25 +10,74 @@ import {
   formatRating,
 } from "../utils/media";
 
-export default function Hero({ items = [], mediaType = "movie" }) {
-  const [current, setCurrent] = useState(0);
-  const [loaded, setLoaded] = useState(false);
+import "../styles/Hero.css";
 
-  const item = items[current];
-
-  const next = useCallback(() => {
-    setCurrent((prev) => (prev + 1) % Math.min(items.length, 5));
-    setLoaded(false);
-  }, [items.length]);
+export default function Hero({
+  items = [],
+  mediaType = "movie",
+  loading = false,
+  error = false,
+  onRetry,
+  activeIndex: activeIndexProp = 0,
+  onActiveIndexChange,
+  compact = false,
+}) {
+  const visibleItems = items.slice(0, 5);
+  const activeIndex = Math.min(activeIndexProp, Math.max(visibleItems.length - 1, 0));
+  const item = visibleItems[activeIndex];
 
   useEffect(() => {
-    if (items.length === 0) return;
-    const timer = setInterval(next, 6000);
+    if (visibleItems.length < 2) return undefined;
+    const timer = setInterval(() => {
+      onActiveIndexChange?.((activeIndex + 1) % visibleItems.length);
+    }, 6000);
     return () => clearInterval(timer);
-  }, [items.length, next]);
+  }, [activeIndex, onActiveIndexChange, visibleItems.length]);
 
-  if (!item || items.length === 0) {
-    return null;
+  if (loading) {
+    return (
+      <section className="home-hero home-hero--loading" aria-label="Загрузка главной подборки">
+        <div className="home-hero__loading-content">
+          <span className="home-hero__loading-line home-hero__loading-line--eyebrow" />
+          <span className="home-hero__loading-line home-hero__loading-line--title" />
+          <span className="home-hero__loading-line home-hero__loading-line--copy" />
+          <span className="home-hero__loading-button" />
+        </div>
+      </section>
+    );
+  }
+
+  if (error && !item) {
+    return (
+      <section className="home-hero home-hero--state" role="status">
+        <div className="home-hero__state-content">
+          <span className="home-hero__eyebrow">GexusFilm</span>
+          <h1>Выберите фильм для сегодняшнего вечера</h1>
+          <p>Подборка временно недоступна, но каталог и поиск помогут найти контент вручную.</p>
+          <div className="home-hero__actions">
+            <Link className="home-hero__button home-hero__button--primary" to="/search">Открыть поиск</Link>
+            {onRetry && (
+              <button className="home-hero__button home-hero__button--secondary" type="button" onClick={onRetry}>
+                Повторить
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!item) {
+    return (
+      <section className="home-hero home-hero--state" role="status">
+        <div className="home-hero__state-content">
+          <span className="home-hero__eyebrow">GexusFilm</span>
+          <h1>Найдите, что посмотреть сегодня</h1>
+          <p>Откройте каталог и сузьте выбор по типу, жанру, году и рейтингу.</p>
+          <Link className="home-hero__button home-hero__button--primary" to="/discover">Открыть каталог</Link>
+        </div>
+      </section>
+    );
   }
 
   const id = getMediaId(item);
@@ -40,122 +89,102 @@ export default function Hero({ items = [], mediaType = "movie" }) {
   const title = getMediaTitle(item);
   const year = getMediaYear(item);
   const type = item.media_type || mediaType;
-  const backdrop = item.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
-    : null;
   const poster = item.poster_path
     ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
     : null;
   const rating = formatRating(item.vote_average);
   const overview = item.overview || "";
+  const backdrop = item.backdrop_path
+    ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+    : null;
 
   return (
-    <section className="relative w-full h-[85vh] min-h-[500px] max-h-[900px] overflow-hidden">
-      {/* Фоновое изображение */}
-      <div className="absolute inset-0 transition-opacity duration-700 ease-in-out">
-        {!loaded && (
-          <div className="absolute inset-0 bg-[#0f172a] animate-pulse" />
-        )}
+    <section className={`home-hero ${compact ? "home-hero--compact" : ""}`} aria-labelledby="home-hero-title">
+      <div className="home-hero__background" aria-hidden="true">
+        <div className="home-hero__backdrop-placeholder" />
         {backdrop && (
           <img
+            key={backdrop}
             src={backdrop}
             alt=""
-            className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
-            onLoad={() => setLoaded(true)}
-            onError={() => setLoaded(true)}
-            fetchPriority="high"
+            className="home-hero__backdrop"
+            onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
           />
         )}
       </div>
+      <div className="home-hero__scrim" aria-hidden="true" />
 
-      {/* Градиентные затемнения */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#020817] via-[#020817]/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#020817]/90 via-[#020817]/40 to-transparent" />
-
-      {/* Контент */}
-      <div className="relative z-10 h-full flex items-end pb-20 px-6 md:px-12 lg:px-16">
-        <div className="flex items-end gap-8 w-full max-w-7xl mx-auto">
-          {/* Постер (десктоп) */}
-          <div className="hidden md:block w-[200px] flex-shrink-0">
-            <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+      <div className="home-hero__content">
+        <div className="home-hero__inner">
+          <div className="home-hero__poster-wrap">
+            <div className="home-hero__poster">
               {poster && (
                 <img
                   src={poster}
                   alt={title}
-                  className="w-full h-full object-cover"
+                  className="home-hero__poster-image"
                   loading="eager"
-                  onError={(event) => { event.currentTarget.hidden = true; }}
+                  onError={(event) => { event.currentTarget.remove(); }}
                 />
               )}
             </div>
           </div>
 
-          {/* Текстовая информация */}
-          <div className="flex-1 min-w-0">
-            {/* Рейтинг и год */}
-            <div className="flex items-center gap-4 mb-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400/20 text-yellow-400 text-sm font-semibold">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <div className="home-hero__info">
+            <div className="home-hero__eyebrow">Сейчас в тренде</div>
+
+            <div className="home-hero__meta">
+              <span className="home-hero__rating">
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
                 {rating}
               </span>
-              <span className="text-white/60 text-sm">{year}</span>
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-white/10 text-white/70 uppercase tracking-wider">
+              <span>{year}</span>
+              <span className="home-hero__type">
                 {type === "movie" ? "Фильм" : "Сериал"}
               </span>
             </div>
 
-            {/* Заголовок */}
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+            <h1 id="home-hero-title" className="home-hero__title">
               {title}
             </h1>
 
-            {/* Описание */}
-            {overview && (
-              <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl line-clamp-3 mb-6">
-                {overview}
-              </p>
-            )}
+            <p className="home-hero__overview">{overview}</p>
 
-            {/* Кнопки действий */}
-            <div className="flex items-center gap-3">
+            <div className="home-hero__actions">
               <Link
                 to={getMediaRoute(type, id)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25"
+                className="home-hero__button home-hero__button--primary"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                 </svg>
-                Смотреть
+                Подробнее
               </Link>
 
-              <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors backdrop-blur-sm">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                В список
-              </button>
+              <Link className="home-hero__button home-hero__button--secondary" to="/discover">
+                Открыть каталог
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Индикаторы слайдов */}
-      <div className="absolute bottom-6 right-6 md:right-12 lg:right-16 z-20 flex gap-2">
-        {items.slice(0, 5).map((_, i) => (
-          <button
-            key={i}
-            onClick={() => { setCurrent(i); setLoaded(false); }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === current
-                ? "w-8 bg-primary"
-                : "w-4 bg-white/30 hover:bg-white/50"
-            }`}
-            aria-label={`Слайд ${i + 1}`}
-          />
-        ))}
-      </div>
+      {visibleItems.length > 1 && (
+        <div className="home-hero__dots" aria-label="Выбор трендовой подборки">
+          {visibleItems.map((visibleItem, index) => (
+            <button
+              key={getMediaId(visibleItem) || index}
+              type="button"
+              className={`home-hero__dot ${index === activeIndex ? "is-active" : ""}`}
+              onClick={() => onActiveIndexChange?.(index)}
+              aria-label={`Показать ${getMediaTitle(visibleItem)}`}
+              aria-pressed={index === activeIndex}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

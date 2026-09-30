@@ -1,21 +1,101 @@
 /* MediaRow — Tailwind-совместимые стили для карусели */
 
 .media-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 0 48px;
 }
 
 .media-section__header {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
 }
 
 .media-section__header h2 {
+  margin: 0;
   font-size: 1.375rem;
   font-weight: 700;
   color: #fff;
   letter-spacing: -0.01em;
+}
+
+.media-section__title-link {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.media-section__title-link:hover {
+  color: #dbeafe;
+}
+
+.media-section__title-link:focus-visible,
+.media-section__view-all:focus-visible,
+.row-btn:focus-visible,
+.row-overlay:focus-visible {
+  outline: 3px solid rgba(147, 197, 253, 0.7);
+  outline-offset: 3px;
+}
+
+.media-section__title-link svg {
+  width: 17px;
+  height: 17px;
+  color: #93c5fd;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.media-section__title-link:hover svg,
+.media-section__title-link:focus-visible svg {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.media-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.media-section__view-all {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid rgba(147, 197, 253, 0.34);
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #bfdbfe;
+  font-size: 0.8125rem;
+  font-weight: 750;
+  white-space: nowrap;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.media-section__view-all:hover {
+  border-color: rgba(191, 219, 254, 0.62);
+  background: rgba(59, 130, 246, 0.24);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.media-section__view-all svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 180ms ease;
+}
+
+.media-section__view-all:hover svg {
+  transform: translateX(2px);
 }
 
 /* Обёртка для кнопок прокрутки */
@@ -40,6 +120,11 @@
   backdrop-filter: blur(4px);
 }
 
+.row-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
 .row-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.2);
@@ -54,6 +139,9 @@
 /* Контейнер */
 .row-wrapper {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* Оверлей — затемнение + стрелка */
@@ -110,6 +198,9 @@
 /* Горизонтальный скролл-контейнер */
 .row {
   display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   gap: 12px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
@@ -121,6 +212,14 @@
 
 .row > .media-card-link {
   flex: 0 0 clamp(360px, 42vw, 560px);
+}
+
+.media-section--compact .row {
+  gap: 14px;
+}
+
+.media-section--compact .row > .media-card-link {
+  flex: 0 0 clamp(176px, 18vw, 208px);
 }
 
 .row::-webkit-scrollbar {
@@ -148,6 +247,18 @@
 
   .row > .media-card-link {
     flex-basis: min(88vw, 420px);
+  }
+
+  .media-section--compact .row > .media-card-link {
+    flex-basis: 164px;
+  }
+
+  .media-row__actions {
+    gap: 8px;
+  }
+
+  .media-section__view-all {
+    font-size: 0.75rem;
   }
 }
 

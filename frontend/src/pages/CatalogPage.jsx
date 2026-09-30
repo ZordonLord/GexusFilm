@@ -46,6 +46,8 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     perPage,
   } = urlState;
   const mediaType = urlState.type;
+  const viewMode = searchParams.get("view") === "list" ? "list" : "grid";
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -213,14 +215,18 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleViewChange = (nextView) => {
+    updateUrl({ view: nextView === "grid" ? "" : nextView });
+  };
+
   return (
       <div className="catalog-page-shell flex flex-col min-h-screen bg-[var(--bg)]">
       <Header />
 
-      <div className="flex flex-1">
+      <div className="catalog-page-shell__body flex flex-1">
         <Sidebar />
 
-        <main className="flex-1 min-w-0 flex flex-col">
+        <main className="catalog-page-shell__main flex-1 min-w-0 flex flex-col">
           <div className="catalog-page">
             {/* Заголовок */}
             <div className="catalog-page__header">
@@ -234,7 +240,22 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
               </p>
             </div>
 
-            <MediaFilterToolbar
+            <div className={`catalog-page__filter-shell ${filtersOpen ? "is-open" : ""}`}>
+              <button
+                type="button"
+                className="catalog-page__mobile-filter-trigger"
+                onClick={() => setFiltersOpen(true)}
+                aria-expanded={filtersOpen}
+                aria-controls="catalog-filter-drawer"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10m-7 6h4" /></svg>
+                Фильтры{activeFiltersCount > 0 ? ` · ${activeFiltersCount}` : ""}
+              </button>
+              {filtersOpen && <button type="button" className="catalog-page__filter-scrim" onClick={() => setFiltersOpen(false)} aria-label="Закрыть фильтры" />}
+              <MediaFilterToolbar
+              mobileDrawer
+              onClose={() => setFiltersOpen(false)}
+              id="catalog-filter-drawer"
               className="catalog-page__filters"
               heading="Фильтры каталога"
               activeFiltersCount={activeFiltersCount}
@@ -257,7 +278,22 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
               country={country}
               onCountryChange={(value) => updateUrl({ country: value, page: "" })}
               idPrefix="catalog-filter"
-            />
+              />
+            </div>
+
+            <div className="catalog-page__view-toolbar" aria-label="Режим отображения каталога">
+              <span className="catalog-page__view-label">Вид каталога</span>
+              <div className="catalog-page__view-switch" role="group">
+                <button type="button" className={viewMode === "grid" ? "is-active" : ""} onClick={() => handleViewChange("grid")} aria-pressed={viewMode === "grid"}>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
+                  Сетка
+                </button>
+                <button type="button" className={viewMode === "list" ? "is-active" : ""} onClick={() => handleViewChange("list")} aria-pressed={viewMode === "list"}>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>
+                  Список
+                </button>
+              </div>
+            </div>
 
             <MediaBrowser
               items={items}
@@ -272,6 +308,9 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
               emptyMessage="Попробуйте изменить фильтры."
               errorTitle="Не получилось загрузить каталог"
               variant="catalog"
+              viewMode={viewMode}
+              compactCards={viewMode === "grid"}
+              skeletonCount={24}
             />
           </div>
 

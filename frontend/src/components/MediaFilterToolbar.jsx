@@ -31,6 +31,8 @@ export default function MediaFilterToolbar({
   onCountryChange,
   idPrefix = "media-filter",
   className = "",
+  mobileDrawer = false,
+  onClose,
 }) {
   const headingId = `${idPrefix}-heading`;
   const selectedYearFrom = Number.parseInt(yearFrom, 10) || YEAR_MIN;
@@ -54,6 +56,11 @@ export default function MediaFilterToolbar({
           {activeFiltersCount > 0 && onReset && (
             <button type="button" className="media-filter-toolbar__reset" onClick={onReset}>
               Сбросить фильтры
+            </button>
+          )}
+          {mobileDrawer && (
+            <button type="button" className="media-filter-toolbar__close" onClick={onClose} aria-label="Закрыть фильтры">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" /></svg>
             </button>
           )}
         </div>
@@ -180,6 +187,11 @@ export default function MediaFilterToolbar({
           />
         </label>
       </div>
+      {mobileDrawer && (
+        <div className="media-filter-toolbar__mobile-actions">
+          <button type="button" onClick={onClose}>Применить фильтры</button>
+        </div>
+      )}
     </MediaToolbar>
   );
 }

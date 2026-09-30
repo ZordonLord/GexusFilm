@@ -19,6 +19,7 @@ import "../styles/MediaCard.css";
 export default function MediaCard({
   item,
   mediaType = "movie",
+  compact = false,
 }) {
   const [loaded, setLoaded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -46,7 +47,7 @@ export default function MediaCard({
   return (
     <Link
       to={getMediaRoute(type, id)}
-      className="media-card-link"
+      className={`media-card-link ${compact ? "media-card-link--compact" : ""}`}
     >
       <article className="media-card">
 
@@ -71,13 +72,29 @@ export default function MediaCard({
               </svg>
             </div>
           )}
+
+          {compact && (
+            <div className="media-card__poster-meta" aria-label={`${getMediaTypeLabel(type)}, ${year}, рейтинг ${rating}`}>
+              <span>{getMediaTypeLabel(type)}</span>
+              <span aria-hidden="true">•</span>
+              <span>{year}</span>
+              {rating !== "—" && (
+                <span className="media-card__rating">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z" />
+                  </svg>
+                  {rating}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="media-card__content">
           <div className="media-card__heading">
             <h3 className="media-card__title">{title}</h3>
 
-            <div className="media-card__meta">
+            <div className={`media-card__meta ${compact ? "media-card__meta--compact-hidden" : ""}`}>
               <span>{getMediaTypeLabel(type)}</span>
               <span aria-hidden="true">•</span>
               <span>{year}</span>
@@ -95,7 +112,15 @@ export default function MediaCard({
             </div>
           </div>
 
-          {genres.length > 0 && (
+          {compact && genres.length > 0 && (
+            <div className="media-card__genres media-card__genres--compact">
+              {genres.map((genre) => (
+                <span key={genre} className="media-card__genre">{genre}</span>
+              ))}
+            </div>
+          )}
+
+          {!compact && genres.length > 0 && (
             <div className="media-card__genres">
               {genres.map((genre) => (
                 <span key={genre} className="media-card__genre">{genre}</span>
@@ -103,7 +128,7 @@ export default function MediaCard({
             </div>
           )}
 
-          {overview && <p className="media-card__overview">{overview}</p>}
+          {!compact && overview && <p className="media-card__overview">{overview}</p>}
 
           <span className="media-card__action">
             Подробнее

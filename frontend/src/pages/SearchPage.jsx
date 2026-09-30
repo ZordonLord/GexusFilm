@@ -211,7 +211,6 @@ export default function SearchPage() {
           </div>
 
           <SearchQueryForm
-            key={urlState.query}
             query={urlState.query}
             searchParams={searchParams}
             setSearchParams={setSearchParams}

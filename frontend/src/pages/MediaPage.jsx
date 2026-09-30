@@ -46,7 +46,7 @@ export default function MediaPage() {
     return (
       <div className="flex flex-col min-h-screen bg-[var(--bg)]">
         <Header />
-        <div className="flex flex-1">
+        <div className="media-page-shell__body flex flex-1">
           <Sidebar />
           <main className="flex-1 min-w-0 flex items-center justify-center">
             <div className="media-loading">Загрузка...</div>
@@ -60,7 +60,7 @@ export default function MediaPage() {
     return (
       <div className="flex flex-col min-h-screen bg-[var(--bg)]">
         <Header />
-        <div className="flex flex-1">
+        <div className="media-page-shell__body flex flex-1">
           <Sidebar />
           <main className="flex-1 min-w-0 flex items-center justify-center">
             <div className="media-loading">Не найдено</div>
@@ -74,7 +74,7 @@ export default function MediaPage() {
     <div className="flex flex-col min-h-screen bg-[var(--bg)]">
       <Header />
 
-      <div className="flex flex-1">
+      <div className="media-page-shell__body flex flex-1">
         <Sidebar />
 
         <main className="flex-1 min-w-0 flex flex-col">

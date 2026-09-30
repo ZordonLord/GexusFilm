@@ -1,8 +1,8 @@
 // Скелетон-карточка для состояния загрузки — с анимацией блика
 
-export default function SkeletonCard() {
+export default function SkeletonCard({ compact = false }) {
   return (
-    <div className="media-card-link">
+    <div className={`media-card-link ${compact ? "media-card-link--compact" : ""}`}>
       <article className="media-card">
         <div className="media-card__poster-wrapper">
           <div className="media-card__skeleton" />
@@ -11,10 +11,10 @@ export default function SkeletonCard() {
         <div className="media-card__content">
           <div className="skeleton-text skeleton-text--title" />
           <div className="skeleton-text skeleton-text--meta" />
-          <div className="skeleton-text skeleton-text--genres" />
-          <div className="skeleton-text skeleton-text--overview" />
-          <div className="skeleton-text skeleton-text--overview skeleton-text--overview-short" />
-          <div className="skeleton-text skeleton-text--action" />
+          {!compact && <div className="skeleton-text skeleton-text--genres" />}
+          {!compact && <div className="skeleton-text skeleton-text--overview" />}
+          {!compact && <div className="skeleton-text skeleton-text--overview skeleton-text--overview-short" />}
+          {!compact && <div className="skeleton-text skeleton-text--action" />}
         </div>
       </article>
     </div>

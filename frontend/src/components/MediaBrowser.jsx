@@ -71,9 +71,11 @@ export default function MediaBrowser({
   totalPages = 0,
   onPageChange,
   variant = "default",
+  viewMode = "list",
+  compactCards = false,
 }) {
   return (
-    <section className={`media-browser media-browser--${variant}`} aria-busy={loading}>
+    <section className={`media-browser media-browser--${variant} media-browser--${viewMode}`} aria-busy={loading}>
       {resultsTitle && (
         <div className="media-browser__results-head" aria-live="polite">
           <h2>{resultsTitle}</h2>
@@ -86,13 +88,13 @@ export default function MediaBrowser({
       ) : (
         <div className="media-browser__grid">
           {loading
-            ? Array.from({ length: skeletonCount }).map((_, index) => <SkeletonCard key={`media-browser-skeleton-${index}`} />)
+            ? Array.from({ length: skeletonCount }).map((_, index) => <SkeletonCard key={`media-browser-skeleton-${index}`} compact={compactCards} />)
             : items.length > 0
               ? items.map((item) => {
                   const itemType = item.media_type || (mediaType === "all" ? "movie" : mediaType);
                   const key = getMediaKey(item, itemType);
 
-                  return key ? <MediaCard key={key} item={item} mediaType={itemType} /> : null;
+                  return key ? <MediaCard key={key} item={item} mediaType={itemType} compact={compactCards} /> : null;
                 })
               : <MediaState kind="empty" title={emptyTitle} message={emptyMessage} />}
         </div>

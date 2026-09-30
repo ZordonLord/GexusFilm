@@ -1,17 +1,29 @@
 .site-header {
-  position: sticky;
+  position: fixed;
   z-index: 20;
-  top: 0;
+  top: 8px;
+  right: 20px;
+  left: 20px;
   display: flex;
-  width: 100%;
+  width: auto;
   min-height: 64px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin: 0;
   padding: 0 24px;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background: rgba(9, 18, 38, 0.72);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(18px);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.site-header--hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(-100% - 24px));
 }
 
 .site-header__brand,
@@ -30,17 +42,16 @@
   width: 44px;
   height: 44px;
   place-items: center;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.045);
+  background: transparent;
   color: #cbd5e1;
   cursor: pointer;
   transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .site-header__menu-toggle:hover {
-  border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
@@ -166,7 +177,14 @@
 @media (max-width: 768px) {
   .site-header {
     gap: 10px;
-    padding: 0 16px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    min-height: 56px;
+    top: 6px;
+    margin: 0;
+    padding: 0 12px;
+    border-radius: 20px;
   }
 
   .site-header__logo-text,
@@ -184,5 +202,9 @@
 @media (prefers-reduced-motion: reduce) {
   .site-header * {
     transition-duration: 0.01ms !important;
+  }
+
+  .site-header {
+    transition: none;
   }
 }
