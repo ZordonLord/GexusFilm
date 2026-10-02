@@ -10,7 +10,8 @@
 
 .catalog-page-shell__body {
   padding-top: 96px;
-  padding-left: calc(var(--sidebar-width) + 40px);
+  padding-left: var(--content-sidebar-offset);
+  transition: padding-left 220ms ease;
 }
 
 .catalog-page-shell__main {

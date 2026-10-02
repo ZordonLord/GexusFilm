@@ -17,7 +17,8 @@
   flex: 1;
   overflow-x: clip;
   padding-top: 96px;
-  padding-left: calc(var(--sidebar-width) + 40px);
+  padding-left: var(--content-sidebar-offset);
+  transition: padding-left 220ms ease;
 }
 
 .home-page-shell__main {

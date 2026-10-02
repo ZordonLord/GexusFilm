@@ -1,7 +1,8 @@
 .media-page-shell__body {
   min-width: 0;
   padding-top: 96px;
-  padding-left: calc(var(--sidebar-width) + 40px);
+  padding-left: var(--content-sidebar-offset);
+  transition: padding-left 220ms ease;
   overflow-x: clip;
 }
 

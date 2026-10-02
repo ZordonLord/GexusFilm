@@ -26,10 +26,17 @@ export function SidebarProvider({ children }) {
 
   const toggleSidebar = () => setIsOpen((open) => !open);
   const closeSidebar = () => setIsOpen(false);
+  const layoutState = isMobile
+    ? "app-layout--mobile"
+    : isOpen
+      ? "app-layout--sidebar-expanded"
+      : "app-layout--sidebar-collapsed";
 
   return (
     <SidebarContext.Provider value={{ isMobile, isOpen, toggleSidebar, closeSidebar }}>
-      {children}
+      <div className={`app-layout ${layoutState}`}>
+        {children}
+      </div>
     </SidebarContext.Provider>
   );
 }

@@ -26,6 +26,18 @@
   --backdrop: blur(14px);
 }
 
+.app-layout {
+  --content-sidebar-offset: calc(var(--sidebar-width) + 40px);
+}
+
+.app-layout--sidebar-collapsed {
+  --content-sidebar-offset: calc(var(--sidebar-collapsed-width) + 40px);
+}
+
+.app-layout--mobile {
+  --content-sidebar-offset: 0px;
+}
+
 /* Базовые стили */
 body {
   margin: 0;
