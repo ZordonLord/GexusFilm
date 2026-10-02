@@ -124,24 +124,45 @@
 @media (max-width: 768px) {
   .app-sidebar {
     position: fixed;
-    top: 66px;
-    bottom: 0;
-    left: 0;
-    width: min(280px, calc(100vw - 48px));
-    height: auto;
+    z-index: 15;
+    top: 76px;
+    right: auto;
+    bottom: 16px;
+    left: 12px;
+    width: min(280px, calc(100vw - 24px));
+    height: calc(100vh - 92px);
     min-height: 0;
     flex-basis: auto;
     margin: 0;
-    border: 0;
-    border-radius: 0 24px 24px 0;
-    background: #0a0f1e;
-    box-shadow: 18px 0 45px rgba(0, 0, 0, 0.45);
-    backdrop-filter: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    background: rgba(9, 18, 38, 0.68);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(18px);
+    isolation: isolate;
     overflow-y: auto;
-    transform: translateX(-105%);
+    transform: translateX(calc(-100% - 24px));
+  }
+
+  .app-sidebar__link,
+  .app-sidebar__settings {
+    color: rgba(226, 232, 240, 0.78);
+  }
+
+  .app-sidebar__link:hover,
+  .app-sidebar__settings:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+
+  .app-sidebar__link--active {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
   }
 
   .app-sidebar--mobile-open {
+    z-index: 30;
+    pointer-events: auto;
     transform: translateX(0);
   }
 
@@ -151,8 +172,11 @@
 
   .app-sidebar__scrim {
     position: fixed;
-    z-index: 14;
-    inset: 66px 0 0;
+    z-index: 20;
+    top: 76px;
+    right: 0;
+    bottom: 16px;
+    left: min(292px, calc(100vw - 12px));
     display: block;
     border: 0;
     background: rgba(2, 8, 23, 0.68);
