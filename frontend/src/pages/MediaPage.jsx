@@ -80,12 +80,11 @@ export default function MediaPage() {
         <main className="flex-1 min-w-0 flex flex-col">
           <div
             className="media-page flex-1 flex flex-col"
-            style={{
-              backgroundImage:
-                `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
-            }}
+            style={media.backdrop_path ? {
+              "--media-backdrop-image": `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
+            } : undefined}
           >
-            <MediaHero media={media} />
+            <MediaHero media={media} type={type} />
 
             {type === "tv" && (
               <SeasonList

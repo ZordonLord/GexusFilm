@@ -12,8 +12,9 @@
   flex-direction: column;
   position: relative;
   color: white;
+  background-image: var(--media-backdrop-image, none);
   background-size: cover;
-  background-position: center;
+  background-position: center top;
   background-repeat: no-repeat;
   z-index: 0;
 }
@@ -29,9 +30,18 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(2, 8, 23, .75);
+  background: linear-gradient(
+    180deg,
+    rgba(2, 8, 23, .78) 0%,
+    rgba(2, 8, 23, .9) 48%,
+    var(--bg, #020817) 100%
+  );
   backdrop-filter: blur(12px);
   z-index: 0;
+}
+
+.media-page:not([style*="--media-backdrop-image"])::before {
+  background: linear-gradient(180deg, #101a2d 0%, var(--bg, #020817) 70%);
 }
 
 .media-page > * {
