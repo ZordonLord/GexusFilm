@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { MediaToolbar } from "./MediaBrowser";
 import GenreFilter from "./GenreFilter";
 import { SORT_OPTIONS, TYPE_OPTIONS, YEAR_MAX, YEAR_MIN } from "../utils/catalogFilters";
@@ -13,6 +15,7 @@ export default function MediaFilterToolbar({
   showType = true,
   sortBy,
   onSortChange,
+  showSort = true,
   genres = [],
   includedIds = [],
   excludedIds = [],
@@ -25,6 +28,8 @@ export default function MediaFilterToolbar({
   onYearRangeChange,
   minRating = "",
   onMinRatingChange,
+  releasedOnly = true,
+  onReleasedOnlyChange,
   voteCountGte = "",
   onVoteCountGteChange,
   country = "",
@@ -32,39 +37,79 @@ export default function MediaFilterToolbar({
   idPrefix = "media-filter",
   className = "",
   mobileDrawer = false,
+  compactHeader = false,
   onClose,
+  onApply,
+  activeFilterChips = [],
+  onRemoveFilter,
 }) {
   const headingId = `${idPrefix}-heading`;
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const selectedYearFrom = Number.parseInt(yearFrom, 10) || YEAR_MIN;
   const selectedYearTo = Number.parseInt(yearTo, 10) || YEAR_MAX;
-  const yearOptions = Array.from(
-    { length: YEAR_MAX - YEAR_MIN + 1 },
-    (_, index) => YEAR_MIN + index,
-  );
-
+  const selectedRating = Number.parseFloat(minRating) || 0;
+  const yearPresets = [
+    { label: "Любой год", from: YEAR_MIN, to: YEAR_MAX },
+    { label: "Последние 5 лет", from: Math.max(YEAR_MIN, YEAR_MAX - 4), to: YEAR_MAX },
+    { label: "Последние 10 лет", from: Math.max(YEAR_MIN, YEAR_MAX - 9), to: YEAR_MAX },
+    { label: "2000-е", from: 2000, to: Math.min(2009, YEAR_MAX) },
+    { label: "1990-е", from: 1990, to: Math.min(1999, YEAR_MAX) },
+  ];
+  const ratingPresets = [6, 7, 8, 9];
   return (
     <MediaToolbar
       className={`media-filter-toolbar ${className}`.trim()}
-      aria-labelledby={headingId}
+      aria-label={compactHeader ? heading : undefined}
+      aria-labelledby={compactHeader ? undefined : headingId}
     >
-      <div className="media-filter-toolbar__head">
-        <h2 id={headingId}>{heading}</h2>
-        <div className="media-filter-toolbar__status">
-          <span aria-live="polite">
-            {activeFiltersCount > 0 ? `${activeFiltersCount} активно` : "Настройте выдачу"}
-          </span>
-          {activeFiltersCount > 0 && onReset && (
-            <button type="button" className="media-filter-toolbar__reset" onClick={onReset}>
-              Сбросить фильтры
-            </button>
+      {(!compactHeader || mobileDrawer) && (
+        <div className={`media-filter-toolbar__head${compactHeader ? " is-compact" : ""}`}>
+          {!compactHeader && (
+            <div>
+              <h2 id={headingId}>{heading}</h2>
+              <p className="media-filter-toolbar__hint">Настройте выдачу под свой вечер</p>
+            </div>
           )}
-          {mobileDrawer && (
-            <button type="button" className="media-filter-toolbar__close" onClick={onClose} aria-label="Закрыть фильтры">
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" /></svg>
+          <div className="media-filter-toolbar__status">
+            {!compactHeader && (
+              <span aria-live="polite">
+                {activeFiltersCount > 0 ? `${activeFiltersCount} активно` : "Настройте выдачу"}
+              </span>
+            )}
+            {!compactHeader && !mobileDrawer && activeFiltersCount > 0 && onReset && (
+              <button type="button" className="media-filter-toolbar__reset" onClick={onReset}>
+                Сбросить
+              </button>
+            )}
+            {mobileDrawer && (
+              <button type="button" className="media-filter-toolbar__close" onClick={onClose} aria-label="Закрыть фильтры">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" /></svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(activeFilterChips.length > 0 || (compactHeader && !mobileDrawer && activeFiltersCount > 0 && onReset)) && (
+        <div className="media-filter-toolbar__chips" aria-label="Активные фильтры">
+          {activeFilterChips.map((chip) => (
+            <button
+              type="button"
+              className="media-filter-toolbar__chip"
+              key={chip.key}
+              onClick={() => onRemoveFilter?.(chip.key)}
+              aria-label={`Убрать фильтр: ${chip.label}`}
+            >
+              {chip.label}<span aria-hidden="true">×</span>
+            </button>
+          ))}
+          {compactHeader && !mobileDrawer && activeFiltersCount > 0 && onReset && (
+            <button type="button" className="media-filter-toolbar__reset" onClick={onReset}>
+              Сбросить
             </button>
           )}
         </div>
-      </div>
+      )}
 
       <div className="media-filter-toolbar__grid">
         {showType && (
@@ -86,7 +131,8 @@ export default function MediaFilterToolbar({
           </fieldset>
         )}
 
-        <label className="media-filter-toolbar__field">
+        {showSort && (
+        <label className="media-filter-toolbar__field media-filter-toolbar__field--sort">
           <span>Сортировка</span>
           <select value={sortBy} onChange={(event) => onSortChange?.(event.target.value)}>
             {SORT_OPTIONS.map((option) => (
@@ -94,6 +140,7 @@ export default function MediaFilterToolbar({
             ))}
           </select>
         </label>
+        )}
 
         <div className="media-filter-toolbar__field media-filter-toolbar__field--genre">
           <GenreFilter
@@ -109,87 +156,139 @@ export default function MediaFilterToolbar({
 
         <fieldset className="media-filter-toolbar__field media-filter-toolbar__field--years" disabled={discoverOnlyDisabled}>
           <legend>Годы выпуска</legend>
+          <div className="media-filter-toolbar__range" aria-label="Диапазон годов выпуска">
+            <div className="media-filter-toolbar__range-track" />
+            <input
+              type="range"
+              min={YEAR_MIN}
+              max={YEAR_MAX}
+              value={selectedYearFrom}
+              aria-label="Минимальный год выпуска"
+              onChange={(event) => onYearRangeChange?.({
+                from: Math.min(Number(event.target.value), selectedYearTo),
+                to: selectedYearTo,
+              })}
+            />
+            <input
+              type="range"
+              min={YEAR_MIN}
+              max={YEAR_MAX}
+              value={selectedYearTo}
+              aria-label="Максимальный год выпуска"
+              onChange={(event) => onYearRangeChange?.({
+                from: selectedYearFrom,
+                to: Math.max(Number(event.target.value), selectedYearFrom),
+              })}
+            />
+          </div>
           <div className="media-filter-toolbar__year-fields">
-            <label htmlFor={`${idPrefix}-year-from`}>
-              <span>Год от</span>
-              <select
-                id={`${idPrefix}-year-from`}
-                name={`${idPrefix}-year-from`}
-                value={selectedYearFrom}
-                onChange={(event) => onYearRangeChange?.({
-                  from: Number(event.target.value),
-                  to: selectedYearTo,
-                })}
-              >
-                {yearOptions
-                  .filter((year) => year <= selectedYearTo)
-                  .map((year) => <option key={year} value={year}>{year}</option>)}
-              </select>
-            </label>
-            <label htmlFor={`${idPrefix}-year-to`}>
-              <span>Год до</span>
-              <select
-                id={`${idPrefix}-year-to`}
-                name={`${idPrefix}-year-to`}
-                value={selectedYearTo}
-                onChange={(event) => onYearRangeChange?.({
-                  from: selectedYearFrom,
-                  to: Number(event.target.value),
-                })}
-              >
-                {yearOptions
-                  .filter((year) => year >= selectedYearFrom)
-                  .map((year) => <option key={year} value={year}>{year}</option>)}
-              </select>
-            </label>
+            <span>От <strong>{selectedYearFrom}</strong></span>
+            <span>До <strong>{selectedYearTo}</strong></span>
+          </div>
+          <div className="media-filter-toolbar__presets" aria-label="Быстрые диапазоны годов">
+            {yearPresets.map((preset) => {
+              const isActive = selectedYearFrom === preset.from && selectedYearTo === preset.to;
+              return (
+                <button
+                  type="button"
+                  key={preset.label}
+                  className={isActive ? "is-active" : ""}
+                  aria-pressed={isActive}
+                  onClick={() => onYearRangeChange?.({ from: preset.from, to: preset.to })}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
           </div>
         </fieldset>
 
-        <label className="media-filter-toolbar__field">
-          <span>Рейтинг от</span>
+        <fieldset className="media-filter-toolbar__field media-filter-toolbar__field--rating" disabled={discoverOnlyDisabled}>
+          <legend>Рейтинг от <strong>{selectedRating > 0 ? `${selectedRating.toFixed(1).replace(".0", "")}+` : "любой"}</strong></legend>
+          <div className="media-filter-toolbar__rating-control">
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="0.5"
+              value={selectedRating}
+              style={{ "--rating-progress": selectedRating * 10 }}
+              aria-label="Минимальный рейтинг"
+              onChange={(event) => onMinRatingChange?.(event.target.value === "0" ? "" : event.target.value)}
+            />
+            <div className="media-filter-toolbar__rating-scale" aria-hidden="true">
+              <span>0</span>
+              <span>5</span>
+              <span>10</span>
+            </div>
+          </div>
+          <div className="media-filter-toolbar__rating-presets" aria-label="Быстрый минимальный рейтинг">
+            <button type="button" className={selectedRating === 0 ? "is-active" : ""} aria-pressed={selectedRating === 0} onClick={() => onMinRatingChange?.("")}>Любой</button>
+            {ratingPresets.map((rating) => (
+              <button type="button" key={rating} className={selectedRating === rating ? "is-active" : ""} aria-pressed={selectedRating === rating} onClick={() => onMinRatingChange?.(String(rating))}>{rating}+</button>
+            ))}
+          </div>
+        </fieldset>
+
+        <label className="media-filter-toolbar__released-toggle">
           <input
-            type="number"
-            min="0"
-            max="10"
-            step="0.5"
-            inputMode="decimal"
-            placeholder="0–10"
-            value={minRating}
-            onChange={(event) => onMinRatingChange?.(event.target.value)}
+            type="checkbox"
+            checked={releasedOnly}
+            disabled={discoverOnlyDisabled}
+            onChange={(event) => onReleasedOnlyChange?.(event.target.checked)}
           />
+          <span className="media-filter-toolbar__checkbox-mark" aria-hidden="true" />
+          <span>
+            <strong>Только вышедшие</strong>
+            <small>Без будущих релизов</small>
+          </span>
         </label>
 
-        <label className="media-filter-toolbar__field">
-          <span>Голосов от</span>
-          <input
-            type="number"
-            disabled={discoverOnlyDisabled}
-            min="0"
-            max="1000000000"
-            step="1"
-            inputMode="numeric"
-            placeholder="Например, 200"
-            value={voteCountGte}
-            onChange={(event) => onVoteCountGteChange?.(event.target.value)}
-          />
-        </label>
-
-        <label className="media-filter-toolbar__field">
-          <span>Страна происхождения</span>
-          <input
-            type="text"
-            disabled={discoverOnlyDisabled}
-            maxLength="2"
-            inputMode="text"
-            placeholder="US"
-            value={country}
-            onChange={(event) => onCountryChange?.(event.target.value.toUpperCase())}
-          />
-        </label>
       </div>
+
+      <div className="media-filter-toolbar__advanced-toggle">
+        <button type="button" onClick={() => setAdvancedOpen((open) => !open)} aria-expanded={advancedOpen}>
+          {advancedOpen ? "Скрыть дополнительные фильтры" : "Дополнительные фильтры"}
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d={advancedOpen ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} /></svg>
+        </button>
+      </div>
+
+      {advancedOpen && (
+        <div className="media-filter-toolbar__advanced-grid">
+          <label className="media-filter-toolbar__field">
+            <span>Голосов от</span>
+            <input
+              type="number"
+              disabled={discoverOnlyDisabled}
+              min="0"
+              max="1000000000"
+              step="1"
+              inputMode="numeric"
+              placeholder="Например, 200"
+              value={voteCountGte}
+              onChange={(event) => onVoteCountGteChange?.(event.target.value)}
+            />
+          </label>
+
+          <label className="media-filter-toolbar__field">
+            <span>Страна происхождения</span>
+            <input
+              type="text"
+              disabled={discoverOnlyDisabled}
+              maxLength="2"
+              inputMode="text"
+              placeholder="US"
+              value={country}
+              onChange={(event) => onCountryChange?.(event.target.value.toUpperCase())}
+            />
+          </label>
+        </div>
+      )}
+
       {mobileDrawer && (
         <div className="media-filter-toolbar__mobile-actions">
-          <button type="button" onClick={onClose}>Применить фильтры</button>
+          <button type="button" className="media-filter-toolbar__mobile-reset" onClick={onReset}>Сбросить</button>
+          <button type="button" className="media-filter-toolbar__mobile-apply" onClick={onApply || onClose}>Применить</button>
         </div>
       )}
     </MediaToolbar>

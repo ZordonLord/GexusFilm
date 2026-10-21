@@ -34,7 +34,7 @@ final class SearchController
         $this->assertKnownParameters($params, [
             'type', 'genre_id', 'genre_ids', 'exclude_genre_ids', 'genre', 'year', 'year_from', 'year_to', 'min_rating', 'region',
             'date_from', 'date_to', 'vote_count.gte', 'vote_count_gte', 'language', 'country', 'watch_region',
-            'with_watch_providers', 'with_watch_monetization_types', 'sort_by', 'page', 'per_page',
+            'with_watch_providers', 'with_watch_monetization_types', 'released_only', 'sort_by', 'page', 'per_page',
         ]);
 
         if (isset($params['genre'], $params['genre_id']) || isset($params['genre'], $params['genre_ids']) || isset($params['genre'], $params['exclude_genre_ids'])) {
@@ -83,7 +83,7 @@ final class SearchController
         $criteria = [
             'type' => $type,
             'page' => $this->integerParameter($params, 'page', 1, 1),
-            'per_page' => $this->integerParameter($params, 'per_page', 20, 1, 50),
+            'per_page' => $this->integerParameter($params, 'per_page', 20, 1, 100),
             'sort_by' => $this->stringParameter($params, 'sort_by') ?: 'popularity.desc',
         ];
 
@@ -198,6 +198,29 @@ final class SearchController
         }
         if ($dateTo !== null) {
             $criteria['date_to'] = $dateTo;
+        }
+
+        if (array_key_exists('released_only', $params)) {
+            $releasedOnly = $params['released_only'];
+            if (!is_string($releasedOnly) && !is_int($releasedOnly) && !is_bool($releasedOnly)) {
+                throw new ValidationException('Параметры запроса некорректны', [[
+                    'field' => 'released_only', 'issue' => 'must be a boolean flag',
+                ]]);
+            }
+
+            $releasedOnly = filter_var($releasedOnly, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($releasedOnly === null) {
+                throw new ValidationException('Параметры запроса некорректны', [[
+                    'field' => 'released_only', 'issue' => 'must be a boolean flag',
+                ]]);
+            }
+
+            if ($releasedOnly) {
+                $today = (new \DateTimeImmutable('today'))->format('Y-m-d');
+                if ($dateTo === null || $today < $dateTo) {
+                    $criteria['date_to'] = $today;
+                }
+            }
         }
 
         if (isset($params['vote_count.gte'], $params['vote_count_gte'])) {

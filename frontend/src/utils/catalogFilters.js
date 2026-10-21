@@ -4,6 +4,8 @@ export const DEFAULT_SORT = "popularity.desc";
 export const CATALOG_DEFAULT_SORT = "year.desc";
 export const YEAR_MIN = 1870;
 export const YEAR_MAX = new Date().getFullYear();
+export const DEFAULT_CATALOG_PER_PAGE = 50;
+export const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 export const ALLOWED_TYPES = new Set(["all", "movie", "tv"]);
 
@@ -41,11 +43,11 @@ function parsePositiveIds(value) {
     .slice(0, 5);
 }
 
-export function parseCatalogParams(searchParams, { fallbackType = "all", defaultSort = DEFAULT_SORT } = {}) {
+export function parseCatalogParams(searchParams, { fallbackType = "all", defaultSort = DEFAULT_SORT, defaultPerPage = 20 } = {}) {
   const typeParam = searchParams.get("type");
   const sortParam = searchParams.get("sort_by");
   const pageParam = Number.parseInt(searchParams.get("page") || "1", 10);
-  const perPageParam = Number.parseInt(searchParams.get("per_page") || "20", 10);
+  const perPageParam = Number.parseInt(searchParams.get("per_page") || String(defaultPerPage), 10);
   const explicitGenreId = searchParams.get("genre_id") || "";
   const genreIds = parsePositiveIds(searchParams.get("genre_ids"));
   const excludedGenreIds = parsePositiveIds(searchParams.get("exclude_genre_ids"));
@@ -68,11 +70,15 @@ export function parseCatalogParams(searchParams, { fallbackType = "all", default
     region: searchParams.get("region")?.toUpperCase() || "",
     voteCountGte: searchParams.get("vote_count_gte") || searchParams.get("vote_count.gte") || "",
     country: searchParams.get("country")?.toUpperCase() || "",
+    releasedOnly: !["0", "false"].includes(searchParams.get("released_only")),
     sortBy: ALLOWED_SORTS.has(sortParam) ? sortParam : defaultSort,
     page: Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1,
-    perPage: Number.isInteger(perPageParam) && perPageParam >= 1 && perPageParam <= 50
+    perPage: Number.isInteger(perPageParam)
+      && (defaultPerPage === DEFAULT_CATALOG_PER_PAGE
+        ? PAGE_SIZE_OPTIONS.includes(perPageParam)
+        : [20, ...PAGE_SIZE_OPTIONS].includes(perPageParam))
       ? perPageParam
-      : 20,
+      : defaultPerPage,
   };
 }
 

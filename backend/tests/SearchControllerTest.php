@@ -146,6 +146,38 @@ final class SearchControllerTest extends TestCase
         ]);
     }
 
+    public function testDiscoverReleasedOnlyClampsDateToToday(): void
+    {
+        $service = $this->createMock(SearchServiceInterface::class);
+        $service->expects(self::once())
+            ->method('discover')
+            ->with(self::callback(function (array $criteria): bool {
+                return ($criteria['date_to'] ?? null) === (new \DateTimeImmutable('today'))->format('Y-m-d');
+            }))
+            ->willReturn(['page' => 1, 'results' => [], 'total_pages' => 0, 'total_results' => 0]);
+
+        (new SearchController($service))->discover([
+            'released_only' => '1',
+            'year_to' => '2100',
+        ]);
+    }
+
+    public function testDiscoverCanIncludeFutureReleasesWhenReleasedOnlyIsDisabled(): void
+    {
+        $service = $this->createMock(SearchServiceInterface::class);
+        $service->expects(self::once())
+            ->method('discover')
+            ->with(self::callback(function (array $criteria): bool {
+                return ($criteria['year_to'] ?? null) === 2100 && !array_key_exists('date_to', $criteria);
+            }))
+            ->willReturn(['page' => 1, 'results' => [], 'total_pages' => 0, 'total_results' => 0]);
+
+        (new SearchController($service))->discover([
+            'released_only' => '0',
+            'year_to' => '2100',
+        ]);
+    }
+
     public function testDiscoverRejectsProviderFiltersWithoutWatchRegion(): void
     {
         $service = $this->createMock(SearchServiceInterface::class);

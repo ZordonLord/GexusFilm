@@ -83,8 +83,14 @@ final class SearchService implements SearchServiceInterface
     /** @param array<string, mixed> $criteria */
     private function sourceDiscover(array $criteria): array
     {
+        $perPage = (int) $criteria['per_page'];
+        $requestedPage = (int) $criteria['page'];
+        $resultOffset = ($requestedPage - 1) * $perPage;
+        $firstUpstreamPage = intdiv($resultOffset, 20) + 1;
+        $skipFromFirstPage = $resultOffset % 20;
+        $upstreamPages = max(1, (int) ceil(($skipFromFirstPage + $perPage) / 20));
+
         $params = [
-            'page' => $criteria['page'],
             'sort_by' => $this->sourceSort($criteria),
         ];
 
@@ -136,11 +142,32 @@ final class SearchService implements SearchServiceInterface
             $params['with_watch_monetization_types'] = implode('|', $criteria['with_watch_monetization_types']);
         }
 
-        $result = $criteria['type'] === 'tv'
-            ? $this->contentSource->discoverTv($params)
-            : $this->contentSource->discoverMovies($params);
+        $results = [];
+        $totalResults = 0;
+        $totalPages = 0;
 
-        return $this->normalizeResponse($result, (int) $criteria['page']);
+        for ($pageOffset = 0; $pageOffset < $upstreamPages; $pageOffset++) {
+            $params['page'] = $firstUpstreamPage + $pageOffset;
+            $response = $criteria['type'] === 'tv'
+                ? $this->contentSource->discoverTv($params)
+                : $this->contentSource->discoverMovies($params);
+            $results = array_merge($results, is_array($response['results'] ?? null) ? $response['results'] : []);
+            $totalResults = (int) ($response['total_results'] ?? $totalResults);
+            $totalPages = (int) ($response['total_pages'] ?? $totalPages);
+
+            if (count($results) >= $skipFromFirstPage + $perPage || $params['page'] >= $totalPages) {
+                break;
+            }
+        }
+
+        $results = array_slice($results, $skipFromFirstPage, $perPage);
+
+        return [
+            'page' => $requestedPage,
+            'results' => $results,
+            'total_pages' => $totalResults === 0 ? 0 : (int) ceil($totalResults / $perPage),
+            'total_results' => $totalResults,
+        ];
     }
 
     /**
