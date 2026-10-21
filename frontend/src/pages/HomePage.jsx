@@ -110,7 +110,7 @@ export default function HomePage() {
       <div className="home-page-shell__body">
         <Sidebar />
 
-        <main className="home-page-shell__main">
+        <main className="home-page-shell__main" id="main-content" tabIndex="-1">
           <div className="home-page__top">
             <Hero
               items={heroItems}

@@ -1,4 +1,4 @@
-/* MediaRow — Tailwind-совместимые стили для карусели */
+/* Горизонтальные подборки медиа и управление прокруткой. */
 
 .media-section {
   width: 100%;
@@ -25,6 +25,7 @@
 
 .media-section__title-link {
   display: inline-flex;
+  min-height: 44px;
   min-width: 0;
   align-items: center;
   gap: 8px;
@@ -67,7 +68,7 @@
 
 .media-section__view-all {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 44px;
   align-items: center;
   gap: 6px;
   padding: 0 12px;
@@ -105,8 +106,8 @@
 }
 
 .row-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.06);
@@ -150,7 +151,8 @@
   top: 0;
   bottom: 0;
   z-index: 10;
-  width: 80px;
+  width: 88px;
+  min-width: 44px;
   border: none;
   cursor: pointer;
   display: flex;
@@ -158,6 +160,11 @@
   justify-content: center;
   transition: opacity 0.25s ease;
   outline: none;
+}
+
+.row-overlay:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
 }
 
 .row-overlay--left {
@@ -237,7 +244,7 @@
   }
 
   .row-overlay {
-    width: 48px;
+    width: 56px;
   }
 
   .row-overlay__arrow {
@@ -259,6 +266,10 @@
 
   .media-section__view-all {
     font-size: 0.75rem;
+  }
+
+  .media-section__view-all {
+    min-height: 44px;
   }
 }
 

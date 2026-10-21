@@ -422,13 +422,13 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
   };
 
   return (
-      <div className="catalog-page-shell flex flex-col min-h-screen bg-[var(--bg)]">
+      <div className="catalog-page-shell">
       <Header />
 
-      <div className="catalog-page-shell__body flex flex-1">
+      <div className="catalog-page-shell__body">
         <Sidebar />
 
-        <main className="catalog-page-shell__main flex-1 min-w-0 flex flex-col">
+        <main className="catalog-page-shell__main" id="main-content" tabIndex="-1">
           <div className="catalog-page">
             {/* Заголовок */}
             <div className="catalog-page__header">

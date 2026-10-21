@@ -44,11 +44,11 @@ export default function MediaPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+      <div className="media-page-shell">
         <Header />
-        <div className="media-page-shell__body flex flex-1">
+        <div className="media-page-shell__body">
           <Sidebar />
-          <main className="flex-1 min-w-0 flex items-center justify-center">
+          <main className="media-page-shell__main media-page-shell__main--state" id="main-content" tabIndex="-1">
             <div className="media-loading">Загрузка...</div>
           </main>
         </div>
@@ -58,11 +58,11 @@ export default function MediaPage() {
 
   if (!media) {
     return (
-      <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+      <div className="media-page-shell">
         <Header />
-        <div className="media-page-shell__body flex flex-1">
+        <div className="media-page-shell__body">
           <Sidebar />
-          <main className="flex-1 min-w-0 flex items-center justify-center">
+          <main className="media-page-shell__main media-page-shell__main--state" id="main-content" tabIndex="-1">
             <div className="media-loading">Не найдено</div>
           </main>
         </div>
@@ -71,15 +71,15 @@ export default function MediaPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+    <div className="media-page-shell">
       <Header />
 
-      <div className="media-page-shell__body flex flex-1">
+      <div className="media-page-shell__body">
         <Sidebar />
 
-        <main className="flex-1 min-w-0 flex flex-col">
+        <main className="media-page-shell__main" id="main-content" tabIndex="-1">
           <div
-            className="media-page flex-1 flex flex-col"
+            className="media-page"
             style={media.backdrop_path ? {
               "--media-backdrop-image": `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
             } : undefined}

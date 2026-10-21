@@ -1,39 +1,82 @@
 :root {
-  /* Основные */
+  color-scheme: dark;
+
+  /* Semantic palette: cinematic dark surfaces, cool blue action accent. */
   --bg: #020817;
-  --card-bg: #111827;
-  --card-width: 220px;
-
-  --text: #ffffff;
-  --text-muted: #9ca3af;
-
-  --primary: #3b82f6;
+  --surface: #0b1224;
+  --surface-raised: #111c32;
+  --surface-hover: #1f2b40;
+  --surface-overlay: rgba(9, 18, 38, .82);
+  --text: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #b6c2d2;
+  --text-subtle: #94a3b8;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-soft: rgba(37, 99, 235, .2);
+  --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, .14);
   --warning: #fbbf24;
+  --danger: #f87171;
+  --success: #4ade80;
 
-  --radius: 20px;
+  /* Borders and accessible interaction focus. */
+  --border: rgba(255, 255, 255, .12);
+  --border-hover: rgba(255, 255, 255, .24);
+  --focus-ring: #93c5fd;
+  --focus-ring-contrast: #bfdbfe;
+  --focus-shadow: 0 0 0 3px rgba(59, 130, 246, .3);
 
+  /* Spacing scale. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Shape, elevation and motion. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+  --radius: var(--radius-xl);
+  --shadow: 0 12px 30px rgba(0, 0, 0, .35);
+  --shadow-raised: 0 22px 55px rgba(0, 0, 0, .5);
+  --shadow-hover: var(--shadow-raised);
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(.2, .7, .2, 1);
+  --transition: var(--duration-normal) var(--ease-standard);
+
+  /* Product-specific values. */
+  --card-bg: var(--surface-raised);
+  --card-width: 220px;
   --sidebar-width: 220px;
-
-  /* Новые */
-  --surface: #111827;
-  --surface-hover: #1f2937;
-
-  --border: rgba(255,255,255,.08);
-  --border-hover: rgba(255,255,255,.16);
-
-  --shadow:
-      0 12px 30px rgba(0,0,0,.35);
-
-  --shadow-hover:
-      0 22px 55px rgba(0,0,0,.5);
-
-  --transition: .3s ease;
-
-  --rating-good: #22c55e;
-  --rating-mid: #fbbf24;
-  --rating-bad: #ef4444;
-
-  --glass: rgba(0,0,0,.45);
-
+  --sidebar-collapsed-width: 76px;
+  --rating-good: #4ade80;
+  --rating-mid: var(--warning);
+  --rating-bad: #f87171;
+  --glass: rgba(0, 0, 0, .45);
   --backdrop: blur(14px);
+
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
 }

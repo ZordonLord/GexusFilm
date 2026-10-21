@@ -1,4 +1,14 @@
+.media-page-shell {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background: var(--bg);
+}
+
 .media-page-shell__body {
+  min-width: 0;
+  display: flex;
+  flex: 1 1 auto;
   min-width: 0;
   padding-top: 96px;
   padding-left: var(--content-sidebar-offset);
@@ -6,7 +16,20 @@
   overflow-x: clip;
 }
 
+.media-page-shell__main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.media-page-shell__main--state {
+  align-items: center;
+  justify-content: center;
+}
+
 .media-page {
+  flex: 1 1 auto;
   flex: 1;
   display: flex;
   flex-direction: column;

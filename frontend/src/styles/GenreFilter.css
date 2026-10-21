@@ -58,7 +58,7 @@
   padding: 14px;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 16px;
-  background: #0b1630;
+  background: var(--surface-raised);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.44);
 }
 
@@ -81,19 +81,26 @@
 }
 
 .genre-filter__popover-head span {
-  color: #64748b;
-  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.genre-filter__popover-head span,
+.genre-filter__group-title,
+.genre-filter__empty,
+.genre-filter__disabled-help {
+  color: var(--text-muted);
 }
 
 .genre-filter__popover-close {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: 0;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
-  color: #94a3b8;
+  color: var(--text-secondary);
   cursor: pointer;
   font: inherit;
   font-size: 1.2rem;
@@ -117,7 +124,7 @@
 
 .genre-filter__search input {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px 0 36px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -129,8 +136,13 @@
 }
 
 .genre-filter__search input:focus {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.14);
+  border-color: var(--accent);
+  box-shadow: var(--focus-shadow);
+}
+
+.genre-filter__search input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .genre-filter__mode {
@@ -144,11 +156,11 @@
 }
 
 .genre-filter__mode button {
-  min-height: 34px;
+  min-height: 44px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #94a3b8;
+  color: var(--text-secondary);
   cursor: pointer;
   font: inherit;
   font-size: 0.75rem;
@@ -199,7 +211,7 @@
 }
 
 .genre-filter__quick-list .genre-filter__option {
-  min-height: 38px;
+  min-height: 44px;
   padding: 6px 8px;
   font-size: 0.75rem;
 }
@@ -264,7 +276,7 @@
 .genre-filter__option-state {
   flex: 0 0 auto;
   color: #67e8f9;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -284,7 +296,7 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 8px;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.75rem;
 }
 
@@ -305,7 +317,7 @@
   border-radius: 999px;
   background: rgba(34, 211, 238, 0.12);
   color: #bae6fd;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 
 .genre-filter__chip--excluded {
@@ -316,8 +328,8 @@
 
 .genre-filter__chip button {
   display: grid;
-  width: 22px;
-  height: 22px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: 0;
   border-radius: 50%;
@@ -328,9 +340,23 @@
   line-height: 1;
 }
 
+.genre-filter__chip {
+  min-height: 44px;
+  padding-right: 8px;
+}
+
 .genre-filter__chip button:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
+}
+
+.genre-filter__chip button:focus-visible,
+.genre-filter__popover-close:focus-visible,
+.genre-filter__mode button:focus-visible,
+.genre-filter__option:focus-visible,
+.genre-filter__trigger:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .genre-filter__disabled-help {

@@ -1,7 +1,7 @@
 /* MediaCard — горизонтальная карточка с постером и описанием. */
 
 .media-card-link {
-  --media-card-radius: 16px;
+  --media-card-radius: var(--radius-lg);
   container-type: inline-size;
   container-name: media-card;
   display: block;
@@ -9,7 +9,6 @@
   min-width: 0;
   color: inherit;
   text-decoration: none;
-  outline: none;
 }
 
 .media-card {
@@ -32,7 +31,7 @@
 }
 
 .media-card-link:focus-visible .media-card {
-  outline: 2px solid #22d3ee;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -125,7 +124,7 @@
   align-items: center;
   gap: 6px;
   margin-top: 8px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -167,7 +166,7 @@
   display: -webkit-box;
   margin: 0;
   overflow: clip;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   font-size: clamp(0.78rem, 1.35cqi, 0.9375rem);
   line-height: 1.55;
   -webkit-box-orient: vertical;

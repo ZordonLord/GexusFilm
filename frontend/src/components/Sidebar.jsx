@@ -28,7 +28,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {isMobile && isOpen && (
+        {isMobile && isOpen && (
         <button
           type="button"
           className="app-sidebar__scrim"
@@ -40,6 +40,8 @@ export default function Sidebar() {
         id="site-sidebar"
         className={`app-sidebar ${sidebarState}`}
         aria-label="Основная навигация"
+        aria-hidden={isMobile && !isOpen}
+        inert={isMobile && !isOpen ? "" : undefined}
       >
       {/* Navigation */}
       <nav className="app-sidebar__nav">

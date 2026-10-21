@@ -51,7 +51,13 @@ export default function Header() {
   }, []);
 
   return (
-    <header className={`site-header ${isHidden ? "site-header--hidden" : ""}`}>
+    <>
+      <a className="site-header__skip-link" href="#main-content">Перейти к основному содержимому</a>
+      <header
+        className={`site-header ${isHidden ? "site-header--hidden" : ""}`}
+        inert={isHidden ? "" : undefined}
+        onFocusCapture={() => setIsHidden(false)}
+      >
       {/* Левая часть — логотип */}
       <div className="site-header__brand">
         <button
@@ -72,7 +78,7 @@ export default function Header() {
             <span>G</span>
           </div>
           <span className="site-header__logo-text">
-            Gexus<span className="text-blue-400">Film</span>
+            Gexus<span>Film</span>
           </span>
         </Link>
       </div>
@@ -139,6 +145,7 @@ export default function Header() {
           <span className="site-header__login-text">Войти</span>
         </button>
       </div>
-    </header>
+      </header>
+    </>
   );
 }

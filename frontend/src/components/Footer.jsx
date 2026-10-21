@@ -1,38 +1,40 @@
 // Подвал сайта — копирайт и ссылки
 
+import "../styles/Footer.css";
+
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-white/[0.06] bg-[var(--bg)] mt-auto">
-      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <footer className="site-footer">
+      <div className="site-footer__inner">
         {/* Левая часть — логотип */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">G</span>
+        <div className="site-footer__brand">
+          <div className="site-footer__logo">
+            <span>G</span>
           </div>
-          <span className="text-sm font-semibold text-white/60">
-            Gexus<span className="text-blue-400">Film</span>
+          <span className="site-footer__wordmark">
+            Gexus<span>Film</span>
           </span>
         </div>
 
         {/* Центр — копирайт */}
-        <p className="text-xs text-white/30 text-center">
+        <p className="site-footer__copyright">
           &copy; {year} GexusFilm. Все права защищены.
-          <br className="sm:hidden" /> Данные предоставлены TMDB.
+          <br /> Данные предоставлены TMDB.
         </p>
 
         {/* Правая часть — ссылки */}
-        <div className="flex items-center gap-4">
+        <div className="site-footer__links">
           <a
             href="#"
-            className="text-xs text-white/30 hover:text-white/60 transition-colors duration-200"
+            className="site-footer__link"
           >
             Политика конфиденциальности
           </a>
           <a
             href="#"
-            className="text-xs text-white/30 hover:text-white/60 transition-colors duration-200"
+            className="site-footer__link"
           >
             Контакты
           </a>

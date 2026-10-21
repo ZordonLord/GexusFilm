@@ -194,7 +194,7 @@ export default function SearchPage() {
       <div className="search-page__body">
         <Sidebar />
 
-        <main className="search-page" id="main-content" aria-busy={loading}>
+        <main className="search-page" id="main-content" tabIndex="-1" aria-busy={loading}>
           <div className="search-page__header">
             <div>
               <p className="search-page__eyebrow">GX-14 · Поиск и подборка</p>

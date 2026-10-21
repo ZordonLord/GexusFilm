@@ -264,19 +264,39 @@
 }
 
 .home-hero__dot {
-  width: 28px;
-  height: 6px;
+  width: 48px;
+  height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  background: transparent;
   cursor: pointer;
-  transition: width 180ms ease, background-color 180ms ease;
+  transition: color 180ms ease;
+  color: transparent;
+}
+
+.home-hero__dot::before {
+  display: block;
+  width: 28px;
+  height: 6px;
+  margin-inline: auto;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .56);
+  content: "";
 }
 
 .home-hero__dot.is-active {
-  width: 48px;
+  width: 56px;
+}
+
+.home-hero__dot.is-active::before {
+  width: 40px;
   background: var(--primary);
+}
+
+.home-hero__dot:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .home-hero--state {

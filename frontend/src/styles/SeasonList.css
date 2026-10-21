@@ -22,6 +22,7 @@
 
 .season-item__header {
   display: flex;
+  min-height: 56px;
   align-items: center;
   gap: 16px;
   width: 100%;
@@ -50,8 +51,8 @@
 }
 
 .season-item__toggle {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: flex;
   justify-content: center;
   align-items: center;

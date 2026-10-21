@@ -53,7 +53,7 @@
   gap: 12px;
   padding: 0 12px;
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.52);
+  color: var(--text-muted);
   font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
@@ -67,13 +67,13 @@
 }
 
 .app-sidebar__link:focus-visible {
-  outline: 3px solid rgba(96, 165, 250, 0.5);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .app-sidebar__link--active {
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
+  background: var(--primary-soft);
+  color: var(--focus-ring);
 }
 
 .app-sidebar__icon,
@@ -114,7 +114,7 @@
 }
 
 .app-sidebar__settings {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
 }
 
 .app-sidebar__scrim {
@@ -186,6 +186,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .app-sidebar {
-    transition-duration: 0.01ms !important;
+    transition: none !important;
   }
 }
