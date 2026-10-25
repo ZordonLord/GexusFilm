@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { getMovie, getTvShow } from "../services/api";
+import { getTmdbImageUrl } from "../utils/tmdbImage";
 
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
@@ -23,6 +24,7 @@ export default function MediaPage() {
 
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(true);
+  const backdropUrl = getTmdbImageUrl(media?.backdrop_path, "original");
 
   useEffect(() => {
     async function loadMedia() {
@@ -80,8 +82,8 @@ export default function MediaPage() {
         <main className="media-page-shell__main" id="main-content" tabIndex="-1">
           <div
             className="media-page"
-            style={media.backdrop_path ? {
-              "--media-backdrop-image": `url(https://image.tmdb.org/t/p/original${media.backdrop_path})`,
+            style={backdropUrl ? {
+              "--media-backdrop-image": `url("${backdropUrl}")`,
             } : undefined}
           >
             <MediaHero media={media} type={type} />

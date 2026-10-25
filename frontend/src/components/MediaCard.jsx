@@ -13,6 +13,7 @@ import {
   getMediaGenres,
   formatRating,
 } from "../utils/media";
+import { getTmdbImageUrl } from "../utils/tmdbImage";
 
 import "../styles/MediaCard.css";
 
@@ -40,9 +41,7 @@ export default function MediaCard({
   const rating = formatRating(item.vote_average);
   const genres = getMediaGenres(item).slice(0, 3);
   const overview = item.overview?.trim();
-  const poster = item.poster_path
-    ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-    : null;
+  const poster = getTmdbImageUrl(item.poster_path, "w500");
 
   return (
     <Link

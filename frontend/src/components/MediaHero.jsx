@@ -10,6 +10,7 @@ import {
   getMediaTypeLabel,
   formatRating,
 } from "../utils/media";
+import { getTmdbImageUrl } from "../utils/tmdbImage";
 
 import "../styles/MediaHero.css";
 
@@ -40,9 +41,9 @@ export default function MediaHero({ media, type = "movie" }) {
   const [posterFailed, setPosterFailed] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
 
-  const poster = media.poster_path && !posterFailed
-    ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
-    : null;
+  const poster = posterFailed
+    ? null
+    : getTmdbImageUrl(media.poster_path, "w500");
   const title = getMediaTitle(media);
   const year = getMediaYear(media);
   const rating = formatRating(media.vote_average);

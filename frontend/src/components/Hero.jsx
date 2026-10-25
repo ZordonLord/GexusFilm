@@ -9,6 +9,7 @@ import {
   getMediaRoute,
   formatRating,
 } from "../utils/media";
+import { getTmdbImageUrl } from "../utils/tmdbImage";
 
 import "../styles/Hero.css";
 
@@ -89,14 +90,10 @@ export default function Hero({
   const title = getMediaTitle(item);
   const year = getMediaYear(item);
   const type = item.media_type || mediaType;
-  const poster = item.poster_path
-    ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-    : null;
+  const poster = getTmdbImageUrl(item.poster_path, "w500");
   const rating = formatRating(item.vote_average);
   const overview = item.overview || "";
-  const backdrop = item.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
-    : null;
+  const backdrop = getTmdbImageUrl(item.backdrop_path, "original");
 
   return (
     <section className={`home-hero ${compact ? "home-hero--compact" : ""}`} aria-labelledby="home-hero-title">
