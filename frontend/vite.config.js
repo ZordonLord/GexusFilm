@@ -10,6 +10,11 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/tmdb-image': {
+        target: 'https://image.tmdb.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/tmdb-image/, '/t/p'),
+      },
     },
   },
 })
