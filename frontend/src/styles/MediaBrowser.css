@@ -38,6 +38,34 @@
   min-height: 360px;
 }
 
+.media-browser__groups {
+  display: grid;
+  gap: 30px;
+}
+
+.media-browser__group {
+  min-width: 0;
+}
+
+.media-browser__group-title {
+  margin: 0 0 14px;
+  color: var(--text);
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.media-browser__group-grid {
+  min-height: 0;
+}
+
+.media-card__poster-wrapper--person {
+  min-height: 210px;
+}
+
+.media-card--person .media-card__poster-wrapper--person img {
+  object-position: center 25%;
+}
+
 .media-browser--grid .media-browser__grid {
   grid-template-columns: repeat(auto-fill, minmax(min(176px, 100%), 1fr));
   gap: 20px 14px;
@@ -216,6 +244,12 @@
   .media-browser__page-list {
     order: 3;
     flex-basis: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .media-browser__group-grid .media-card-link--person {
+    grid-column: 1 / -1;
   }
 }
 

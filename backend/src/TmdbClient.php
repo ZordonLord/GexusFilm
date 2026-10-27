@@ -137,6 +137,16 @@ class TmdbClient implements ContentSourceInterface
         return $this->request('/search/movie', array_merge(['query' => $query], $params));
     }
 
+    public function searchMulti(string $query, array $params = []): array
+    {
+        return $this->request('/search/multi', array_merge(['query' => $query], $params));
+    }
+
+    public function searchPeople(string $query, array $params = []): array
+    {
+        return $this->request('/search/person', array_merge(['query' => $query], $params));
+    }
+
     // -- TV Shows --
 
     public function getTrendingTvDay(): array

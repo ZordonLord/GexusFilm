@@ -74,9 +74,10 @@ final class SearchController
     {
         $type = $this->stringParameter($params, 'type') ?: 'movie';
 
-        if (!in_array($type, ['movie', 'tv'], true)) {
+        $allowedTypes = $search ? ['movie', 'tv', 'all', 'person'] : ['movie', 'tv'];
+        if (!in_array($type, $allowedTypes, true)) {
             throw new ValidationException('Параметры запроса некорректны', [[
-                'field' => 'type', 'issue' => 'must be movie or tv',
+                'field' => 'type', 'issue' => 'unsupported content type',
             ]]);
         }
 

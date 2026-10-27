@@ -7,7 +7,7 @@ export const YEAR_MAX = new Date().getFullYear();
 export const DEFAULT_CATALOG_PER_PAGE = 20;
 export const PAGE_SIZE_OPTIONS = [20, 40, 80];
 
-export const ALLOWED_TYPES = new Set(["all", "movie", "tv"]);
+export const ALLOWED_TYPES = new Set(["all", "movie", "tv", "person"]);
 export const ALLOWED_CATALOG_TYPES = new Set(["movie", "tv"]);
 export const SEARCH_PAGE_SIZE_OPTIONS = [20, 25, 50, 100];
 
@@ -36,6 +36,7 @@ export const CATALOG_TYPE_OPTIONS = [
 export const TYPE_OPTIONS = [
   { value: "all", label: "Всё" },
   ...CATALOG_TYPE_OPTIONS,
+  { value: "person", label: "Актёры" },
 ];
 
 function parsePositiveIds(value) {

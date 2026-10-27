@@ -64,6 +64,16 @@ interface ContentSourceInterface
      */
     public function search(string $query, array $params = []): array;
 
+    /**
+     * Поиск фильмов, сериалов и персон одним запросом.
+     */
+    public function searchMulti(string $query, array $params = []): array;
+
+    /**
+     * Поиск людей по имени.
+     */
+    public function searchPeople(string $query, array $params = []): array;
+
     // -- TV Shows --
 
     /**

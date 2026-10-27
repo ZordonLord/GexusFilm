@@ -28,6 +28,8 @@ export default function MediaFilterToolbar({
   onYearRangeChange,
   minRating = "",
   onMinRatingChange,
+  minRatingDisabled = false,
+  yearRangeDisabled = false,
   releasedOnly = true,
   onReleasedOnlyChange,
   voteCountGte = "",
@@ -156,7 +158,7 @@ export default function MediaFilterToolbar({
           />
         </div>
 
-        <fieldset className="media-filter-toolbar__field media-filter-toolbar__field--years" disabled={discoverOnlyDisabled}>
+        <fieldset className="media-filter-toolbar__field media-filter-toolbar__field--years" disabled={discoverOnlyDisabled || yearRangeDisabled}>
           <legend>Годы выпуска</legend>
           <div className="media-filter-toolbar__range" aria-label="Диапазон годов выпуска">
             <div className="media-filter-toolbar__range-track" />
@@ -210,6 +212,7 @@ export default function MediaFilterToolbar({
           <div className="media-filter-toolbar__rating-control">
             <input
               type="range"
+              disabled={minRatingDisabled}
               min="0"
               max="10"
               step="0.5"
@@ -225,9 +228,9 @@ export default function MediaFilterToolbar({
             </div>
           </div>
           <div className="media-filter-toolbar__rating-presets" aria-label="Быстрый минимальный рейтинг">
-            <button type="button" className={selectedRating === 0 ? "is-active" : ""} aria-pressed={selectedRating === 0} onClick={() => onMinRatingChange?.("")}>Любой</button>
+            <button type="button" disabled={minRatingDisabled} className={selectedRating === 0 ? "is-active" : ""} aria-pressed={selectedRating === 0} onClick={() => onMinRatingChange?.("")}>Любой</button>
             {ratingPresets.map((rating) => (
-              <button type="button" key={rating} className={selectedRating === rating ? "is-active" : ""} aria-pressed={selectedRating === rating} onClick={() => onMinRatingChange?.(String(rating))}>{rating}+</button>
+              <button type="button" disabled={minRatingDisabled} key={rating} className={selectedRating === rating ? "is-active" : ""} aria-pressed={selectedRating === rating} onClick={() => onMinRatingChange?.(String(rating))}>{rating}+</button>
             ))}
           </div>
         </fieldset>

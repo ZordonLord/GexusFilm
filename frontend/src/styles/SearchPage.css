@@ -417,13 +417,14 @@
   .search-page__type-switch {
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: -10px 0 20px;
   }
 
   .search-page__type-switch button {
     min-width: 0;
-    padding: 0 8px;
+    padding: 0 5px;
+    font-size: 0.75rem;
   }
 
   .search-page__controls {

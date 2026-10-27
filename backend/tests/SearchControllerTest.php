@@ -40,6 +40,19 @@ final class SearchControllerTest extends TestCase
         self::assertSame(2, $result['page']);
     }
 
+    public function testSearchAcceptsAllAndPersonTypes(): void
+    {
+        foreach (['all', 'person'] as $type) {
+            $service = $this->createMock(SearchServiceInterface::class);
+            $service->expects(self::once())
+                ->method('search')
+                ->with('actor', self::callback(static fn (array $criteria): bool => $criteria['type'] === $type))
+                ->willReturn(['page' => 1, 'results' => [], 'total_pages' => 0, 'total_results' => 0]);
+
+            (new SearchController($service))->search(['q' => 'actor', 'type' => $type]);
+        }
+    }
+
     public function testInvalidPaginationIsRejected(): void
     {
         $service = $this->createMock(SearchServiceInterface::class);
@@ -241,13 +254,13 @@ final class SearchControllerTest extends TestCase
         ]);
     }
 
-    public function testPersonTypeAndUnknownParameterAreRejected(): void
+    public function testUnsupportedTypeAndUnknownParameterAreRejected(): void
     {
         $service = $this->createMock(SearchServiceInterface::class);
         $controller = new SearchController($service);
 
         try {
-            $controller->search(['q' => 'matrix', 'type' => 'person']);
+            $controller->search(['q' => 'matrix', 'type' => 'unknown']);
             self::fail('Expected invalid type exception.');
         } catch (ValidationException $exception) {
             self::assertSame('type', $exception->details[0]['field']);

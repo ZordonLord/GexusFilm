@@ -69,6 +69,16 @@ final class ProtectedContentSource implements ContentSourceInterface
         return $this->run(__FUNCTION__, [$query, $params], fn (): array => $this->source->search($query, $params));
     }
 
+    public function searchMulti(string $query, array $params = []): array
+    {
+        return $this->run(__FUNCTION__, [$query, $params], fn (): array => $this->source->searchMulti($query, $params));
+    }
+
+    public function searchPeople(string $query, array $params = []): array
+    {
+        return $this->run(__FUNCTION__, [$query, $params], fn (): array => $this->source->searchPeople($query, $params));
+    }
+
     public function getTrendingTvDay(): array
     {
         return $this->run(__FUNCTION__, [], fn (): array => $this->source->getTrendingTvDay());

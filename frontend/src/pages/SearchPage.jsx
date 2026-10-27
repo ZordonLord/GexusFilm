@@ -10,10 +10,10 @@ import Footer from "../components/Footer";
 import MediaBrowser from "../components/MediaBrowser";
 import MediaFilterToolbar from "../components/MediaFilterToolbar";
 import {
-  getDiscoverMovies,
-  getDiscoverTv,
   getMovieGenres,
   getSearch,
+  getMultiSearch,
+  getPeopleSearch,
   getTvGenres,
 } from "../services/api";
 import {
@@ -34,21 +34,12 @@ function getErrorMessage(error) {
     || "Не удалось загрузить результаты. Попробуйте ещё раз.";
 }
 
-function mergeResponses(responses, types) {
-  const results = [];
-
-  responses.forEach((response, index) => {
-    const mediaType = types[index];
-    (response.results || []).forEach((item) => {
-      results.push({ ...item, media_type: item.media_type || mediaType });
-    });
-  });
-
-  return {
-    results,
-    totalPages: Math.max(...responses.map((response) => response.total_pages || 0), 0),
-    totalResults: responses.reduce((total, response) => total + (response.total_results || 0), 0),
-  };
+function groupSearchResults(items) {
+  return [
+    { key: "movie", title: "Фильмы", items: items.filter((item) => item.media_type === "movie") },
+    { key: "tv", title: "Сериалы", items: items.filter((item) => item.media_type === "tv") },
+    { key: "person", title: "Актёры", items: items.filter((item) => item.media_type === "person") },
+  ];
 }
 
 export default function SearchPage() {
@@ -98,46 +89,39 @@ export default function SearchPage() {
     let cancelled = false;
 
     async function loadResults() {
+      if (!urlState.query) {
+        setItems([]);
+        setTotalPages(0);
+        setTotalResults(0);
+        setError("");
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError("");
-
-      const types = urlState.type === "all" ? ["movie", "tv"] : [urlState.type];
       const commonParams = {
         page: urlState.page,
         per_page: urlState.perPage,
-        sort_by: urlState.sortBy,
       };
 
-      if (urlState.year) commonParams.year = urlState.year;
-      if (urlState.minRating) commonParams.min_rating = urlState.minRating;
-      if (!urlState.query && urlState.yearFrom) commonParams.year_from = urlState.yearFrom;
-      if (!urlState.query && urlState.yearTo) commonParams.year_to = urlState.yearTo;
-      if (!urlState.query && urlState.genreIds.length > 0) {
-        commonParams.genre_ids = urlState.genreIds.join(",");
-      }
-      if (!urlState.query && urlState.excludedGenreIds.length > 0) {
-        commonParams.exclude_genre_ids = urlState.excludedGenreIds.join(",");
-      }
-      if (!urlState.query && urlState.voteCountGte) commonParams.vote_count_gte = urlState.voteCountGte;
-      if (!urlState.query && urlState.country) commonParams.country = urlState.country;
+      if (urlState.year && urlState.type !== "person") commonParams.year = urlState.year;
+      if (urlState.minRating && urlState.type !== "person") commonParams.min_rating = urlState.minRating;
 
       try {
-        const requests = types.map((type) => {
-          const params = { ...commonParams, type };
-
-          return urlState.query
-            ? getSearch(urlState.query, params)
-            : type === "tv"
-              ? getDiscoverTv(params)
-              : getDiscoverMovies(params);
-        });
-        const responses = await Promise.all(requests);
+        const response = urlState.type === "all"
+          ? await getMultiSearch(urlState.query, commonParams)
+          : urlState.type === "person"
+            ? await getPeopleSearch(urlState.query, commonParams)
+            : await getSearch(urlState.query, { ...commonParams, type: urlState.type });
 
         if (cancelled) return;
-        const merged = mergeResponses(responses, types);
-        setItems(merged.results);
-        setTotalPages(merged.totalPages);
-        setTotalResults(merged.totalResults);
+        setItems((response.results || []).map((item) => ({
+          ...item,
+          media_type: item.media_type || (urlState.type === "person" ? "person" : urlState.type),
+        })));
+        setTotalPages(response.total_pages || 0);
+        setTotalResults(response.total_results || 0);
       } catch (loadError) {
         if (cancelled) return;
         setItems([]);
@@ -152,6 +136,11 @@ export default function SearchPage() {
     loadResults();
     return () => { cancelled = true; };
   }, [reloadKey, urlState]);
+
+  const groupedResults = useMemo(
+    () => urlState.type === "all" ? groupSearchResults(items) : undefined,
+    [items, urlState.type],
+  );
 
   const activeFiltersCount = [
     urlState.genreIds.length > 0,
@@ -274,25 +263,28 @@ export default function SearchPage() {
                 includedIds={urlState.genreIds}
                 excludedIds={urlState.excludedGenreIds}
                 onGenresChange={handleGenresChange}
-                genreDisabled={Boolean(urlState.query)}
-                genreDisabledMessage={urlState.query ? "Жанр доступен для подборки без поискового запроса." : ""}
-                discoverOnlyDisabled={Boolean(urlState.query)}
+                genreDisabled={Boolean(urlState.query) || urlState.type === "person"}
+                genreDisabledMessage={urlState.type === "person" ? "Жанры не применяются к поиску актёров." : urlState.query ? "Жанр доступен для подборки без поискового запроса." : ""}
+                discoverOnlyDisabled={Boolean(urlState.query) || urlState.type === "person"}
                 yearFrom={urlState.yearFrom || urlState.year}
                 yearTo={urlState.yearTo || urlState.year}
                 onYearRangeChange={handleYearRangeChange}
-                minRating={urlState.minRating}
+                yearRangeDisabled={urlState.type === "person"}
+                minRating={urlState.type === "person" ? "" : urlState.minRating}
                 onMinRatingChange={(value) => updateUrl({ min_rating: value, page: "" })}
                 voteCountGte={urlState.voteCountGte}
                 onVoteCountGteChange={(value) => updateUrl({ vote_count_gte: value, "vote_count.gte": "", page: "" })}
                 country={urlState.country}
                 onCountryChange={(value) => updateUrl({ country: value, page: "" })}
                 idPrefix="search-filter"
+                minRatingDisabled={urlState.type === "person"}
               />
             </div>
           </div>
 
           <MediaBrowser
             items={items}
+              resultGroups={groupedResults}
             loading={loading}
             error={error}
             onRetry={() => setReloadKey((key) => key + 1)}
@@ -303,7 +295,7 @@ export default function SearchPage() {
             totalPages={totalPages}
             onPageChange={handlePageChange}
             emptyTitle={urlState.query ? "Ничего не нашли" : "Подборка пока пуста"}
-            emptyMessage={urlState.query ? "Проверьте написание или попробуйте более общий запрос." : "Измените фильтры — и здесь появятся подходящие фильмы и сериалы."}
+            emptyMessage={urlState.query ? "Проверьте написание или попробуйте более общий запрос." : "Введите запрос, чтобы увидеть подходящие результаты."}
             errorTitle="Не получилось загрузить результаты"
             variant="search"
           />

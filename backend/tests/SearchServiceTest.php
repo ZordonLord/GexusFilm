@@ -312,6 +312,86 @@ final class SearchServiceTest extends TestCase
         self::assertCount(1, $source->searchMovieRequests);
     }
 
+    public function testAllSearchMergesMoviesTvAndPeopleWithoutPersistingPeople(): void
+    {
+        $source = new StubContentSource();
+        $source->searchMultiResponses[1] = [
+            'page' => 1,
+            'results' => [
+                ['id' => 1, 'media_type' => 'movie', 'title' => 'Movie'],
+                ['id' => 2, 'media_type' => 'tv', 'name' => 'Show'],
+                ['id' => 3, 'media_type' => 'person', 'name' => 'Actor'],
+            ],
+            'total_pages' => 1,
+            'total_results' => 3,
+        ];
+        $source->searchPeopleResponses[1] = ['page' => 1, 'results' => [['id' => 3, 'name' => 'Actor']], 'total_pages' => 1, 'total_results' => 1];
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->expects(self::never())->method('saveMovieSummaries');
+        $mediaRepository->expects(self::never())->method('saveTvSummaries');
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->search('actor', [
+            'type' => 'all',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame(['movie', 'tv', 'person'], array_column($result['results'], 'media_type'));
+        self::assertCount(1, $source->searchMultiRequests);
+    }
+
+    public function testPersonSearchUsesPersonEndpointAndMarksPersonType(): void
+    {
+        $source = new StubContentSource();
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->search('actor', [
+            'type' => 'person',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame('actor', $source->searchPeopleRequests[0]['query']);
+        self::assertSame('person', $result['results'][0]['media_type']);
+        self::assertSame('Person for actor', $result['results'][0]['name']);
+    }
+
+    public function testAllSearchAppliesYearAndRatingCriteria(): void
+    {
+        $source = new StubContentSource();
+        $source->searchMultiResponses[1] = [
+            'page' => 1,
+            'results' => [
+                ['id' => 1, 'media_type' => 'movie', 'title' => 'Matching', 'release_date' => '2020-05-01', 'vote_average' => 8],
+                ['id' => 2, 'media_type' => 'movie', 'title' => 'Wrong year', 'release_date' => '2019-01-01', 'vote_average' => 9],
+                ['id' => 3, 'media_type' => 'tv', 'name' => 'Low rating', 'first_air_date' => '2020-01-01', 'vote_average' => 5],
+                ['id' => 4, 'media_type' => 'person', 'name' => 'Actor'],
+            ],
+            'total_pages' => 1,
+            'total_results' => 4,
+        ];
+        $service = new SearchService($source, new SearchRepository(null));
+
+        $result = $service->search('actor', [
+            'type' => 'all',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+            'year' => 2020,
+            'min_rating' => 7,
+        ]);
+
+        self::assertSame(['movie', 'person'], array_column($result['results'], 'media_type'));
+    }
+
     public function testSearchPassesTypeQueryFiltersAndPageToTmdb(): void
     {
         $source = new StubContentSource();

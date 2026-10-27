@@ -46,6 +46,12 @@ export const getDiscoverMovies = (params = {}) =>
 export const getSearch = (query, params = {}) =>
   request("/search", { ...params, q: query });
 
+export const getMultiSearch = (query, params = {}) =>
+  request("/search", { ...params, q: query, type: "all" });
+
+export const getPeopleSearch = (query, params = {}) =>
+  request("/search", { ...params, q: query, type: "person" });
+
 export const getMovieGenres = () =>
   request("/genres");
 

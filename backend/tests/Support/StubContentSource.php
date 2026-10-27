@@ -37,6 +37,18 @@ final class StubContentSource implements ContentSourceInterface
     /** @var array<int, array<string, mixed>> */
     public array $searchTvResponses = [];
 
+    /** @var list<array{query: string, params: array<string, mixed>}> */
+    public array $searchMultiRequests = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $searchMultiResponses = [];
+
+    /** @var list<array{query: string, params: array<string, mixed>}> */
+    public array $searchPeopleRequests = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $searchPeopleResponses = [];
+
     // ── Movies ──────────────────────────────────────────────
 
     public function getPopularMovies(): array
@@ -107,6 +119,36 @@ final class StubContentSource implements ContentSourceInterface
         return $this->searchMovieResponses[$page] ?? [
             'page' => $page,
             'results' => [['id' => 6, 'title' => 'Result for ' . $query]],
+            'total_pages' => 1,
+            'total_results' => 1,
+        ];
+    }
+
+    public function searchMulti(string $query, array $params = []): array
+    {
+        $this->searchMultiRequests[] = ['query' => $query, 'params' => $params];
+        $page = (int) ($params['page'] ?? 1);
+
+        return $this->searchMultiResponses[$page] ?? [
+            'page' => $page,
+            'results' => [
+                ['id' => 20, 'media_type' => 'movie', 'title' => 'Multi Movie'],
+                ['id' => 21, 'media_type' => 'tv', 'name' => 'Multi TV'],
+                ['id' => 22, 'media_type' => 'person', 'name' => 'Multi Person'],
+            ],
+            'total_pages' => 1,
+            'total_results' => 3,
+        ];
+    }
+
+    public function searchPeople(string $query, array $params = []): array
+    {
+        $this->searchPeopleRequests[] = ['query' => $query, 'params' => $params];
+        $page = (int) ($params['page'] ?? 1);
+
+        return $this->searchPeopleResponses[$page] ?? [
+            'page' => $page,
+            'results' => [['id' => 23, 'media_type' => 'person', 'name' => 'Person for ' . $query]],
             'total_pages' => 1,
             'total_results' => 1,
         ];
