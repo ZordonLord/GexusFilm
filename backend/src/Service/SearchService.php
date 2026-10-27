@@ -20,19 +20,16 @@ final class SearchService implements SearchServiceInterface
     /** @param array<string, mixed> $criteria */
     public function search(string $query, array $criteria): array
     {
-        $cacheKey = CacheKeyFactory::searchQuery('search', ['q' => $query] + $criteria);
+        // Поисковый кэш содержит ответы TMDB, не ограниченные локальными снапшотами.
+        $cacheKey = CacheKeyFactory::searchQuery('search-tmdb', ['q' => $query] + $criteria);
         $cached = $this->getCached($cacheKey);
 
         if ($cached !== null) {
             return $cached;
         }
 
-        $result = $this->searchRepository->search($query, $criteria);
-
-        if ($result === null) {
-            $result = $this->sourceSearch($query, $criteria);
-            $this->saveSourceResults($result, $criteria['type']);
-        }
+        $result = $this->sourceSearch($query, $criteria);
+        $this->saveSourceResults($result, $criteria['type']);
 
         $this->saveCached($cacheKey, $result);
 
@@ -42,19 +39,16 @@ final class SearchService implements SearchServiceInterface
     /** @param array<string, mixed> $criteria */
     public function discover(array $criteria): array
     {
-        $cacheKey = CacheKeyFactory::searchQuery('discover', $criteria);
+        // Каталожный кэш содержит только выдачу источника; старые локальные ответы не переиспользуются.
+        $cacheKey = CacheKeyFactory::searchQuery('discover-tmdb', $criteria);
         $cached = $this->getCached($cacheKey);
 
         if ($cached !== null) {
             return $cached;
         }
 
-        $result = $this->searchRepository->discover($criteria);
-
-        if ($result === null) {
-            $result = $this->sourceDiscover($criteria);
-            $this->saveSourceResults($result, $criteria['type']);
-        }
+        $result = $this->sourceDiscover($criteria);
+        $this->saveSourceResults($result, $criteria['type']);
 
         $this->saveCached($cacheKey, $result);
 
@@ -64,7 +58,13 @@ final class SearchService implements SearchServiceInterface
     /** @param array<string, mixed> $criteria */
     private function sourceSearch(string $query, array $criteria): array
     {
-        $params = ['page' => $criteria['page']];
+        $perPage = (int) $criteria['per_page'];
+        $requestedPage = (int) $criteria['page'];
+        $resultOffset = ($requestedPage - 1) * $perPage;
+        $firstUpstreamPage = intdiv($resultOffset, 20) + 1;
+        $skipFromFirstPage = $resultOffset % 20;
+        $upstreamPages = max(1, (int) ceil(($skipFromFirstPage + $perPage) / 20));
+        $params = [];
 
         if (($criteria['region'] ?? null) !== null) {
             $params['region'] = $criteria['region'];
@@ -73,11 +73,30 @@ final class SearchService implements SearchServiceInterface
             $params[$criteria['type'] === 'tv' ? 'first_air_date_year' : 'year'] = $criteria['year'];
         }
 
-        $result = $criteria['type'] === 'tv'
-            ? $this->contentSource->searchTv($query, $params)
-            : $this->contentSource->search($query, $params);
+        $results = [];
+        $totalResults = 0;
+        $totalUpstreamPages = 0;
 
-        return $this->normalizeResponse($result, (int) $criteria['page']);
+        for ($pageOffset = 0; $pageOffset < $upstreamPages; $pageOffset++) {
+            $params['page'] = $firstUpstreamPage + $pageOffset;
+            $response = $criteria['type'] === 'tv'
+                ? $this->contentSource->searchTv($query, $params)
+                : $this->contentSource->search($query, $params);
+            $results = array_merge($results, is_array($response['results'] ?? null) ? $response['results'] : []);
+            $totalResults = (int) ($response['total_results'] ?? $totalResults);
+            $totalUpstreamPages = (int) ($response['total_pages'] ?? $totalUpstreamPages);
+
+            if (count($results) >= $skipFromFirstPage + $perPage || $params['page'] >= $totalUpstreamPages) {
+                break;
+            }
+        }
+
+        return [
+            'page' => $requestedPage,
+            'results' => array_slice($results, $skipFromFirstPage, $perPage),
+            'total_pages' => $totalResults === 0 ? 0 : (int) ceil($totalResults / $perPage),
+            'total_results' => $totalResults,
+        ];
     }
 
     /** @param array<string, mixed> $criteria */

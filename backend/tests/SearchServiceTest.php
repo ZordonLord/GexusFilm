@@ -5,12 +5,280 @@ declare(strict_types=1);
 namespace App\Tests;
 
 use App\Repository\SearchRepository;
+use App\Repository\MovieRepository;
 use App\Service\SearchService;
 use App\Tests\Support\StubContentSource;
 use PHPUnit\Framework\TestCase;
 
 final class SearchServiceTest extends TestCase
 {
+    public function testDiscoverUsesTmdbEvenWhenPostgresHasLocalResults(): void
+    {
+        $source = new StubContentSource();
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->expects(self::never())->method('discoverMedia');
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->expects(self::once())->method('saveMovieSummaries');
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->discover([
+            'type' => 'movie',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame('Discovered Movie', $result['results'][0]['title']);
+        self::assertCount(1, $source->discoverMovieRequests);
+    }
+
+    public function testDiscoverPassesFiltersAndSortToTmdbWhenPostgresIsAvailable(): void
+    {
+        $source = new StubContentSource();
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->expects(self::never())->method('discoverMedia');
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $service->discover([
+            'type' => 'movie',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'year.desc',
+            'genre_ids' => [28],
+            'min_rating' => 7.5,
+        ]);
+
+        self::assertSame('primary_release_date.desc', $source->lastDiscoverMovieParams['sort_by']);
+        self::assertSame('28', $source->lastDiscoverMovieParams['with_genres']);
+        self::assertSame(7.5, $source->lastDiscoverMovieParams['vote_average.gte']);
+    }
+
+    public function testDiscoverReturnsRequestedTmdbPageInsteadOfFirstPage(): void
+    {
+        $source = new StubContentSource();
+        $source->discoverMovieResponses = [
+            2 => [
+                'page' => 2,
+                'results' => [['id' => 42, 'title' => 'Second page movie']],
+                'total_pages' => 5,
+                'total_results' => 100,
+            ],
+        ];
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->expects(self::never())->method('discoverMedia');
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->discover([
+            'type' => 'movie',
+            'page' => 2,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame(2, $result['page']);
+        self::assertSame('Second page movie', $result['results'][0]['title']);
+        self::assertSame(2, $source->lastDiscoverMovieParams['page']);
+    }
+
+    public function testDiscoverFallsBackToTmdbWhenPostgresIsUnavailable(): void
+    {
+        $source = new StubContentSource();
+        $service = new SearchService($source, new SearchRepository(null));
+
+        $result = $service->discover([
+            'type' => 'movie',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame('Discovered Movie', $result['results'][0]['title']);
+        self::assertCount(1, $source->discoverMovieRequests);
+    }
+
+    public function testDiscoverCacheKeysDoNotMixFiltersOrPages(): void
+    {
+        $source = new StubContentSource();
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->expects(self::never())->method('discoverMedia');
+        $cacheKeys = [];
+        $mediaRepository->expects(self::exactly(3))
+            ->method('getCachedResponse')
+            ->willReturnCallback(static function (string $key) use (&$cacheKeys): ?array {
+                $cacheKeys[] = $key;
+
+                return null;
+            });
+        $mediaRepository->expects(self::exactly(3))->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        foreach (
+            [
+                ['genre_ids' => [28], 'page' => 1],
+                ['genre_ids' => [35], 'page' => 1],
+                ['genre_ids' => [28], 'page' => 2],
+            ] as $request
+        ) {
+            $service->discover($request + [
+                'type' => 'movie',
+                'per_page' => 20,
+                'sort_by' => 'popularity.desc',
+            ]);
+        }
+
+        self::assertCount(3, array_unique($cacheKeys));
+        foreach ($cacheKeys as $cacheKey) {
+            self::assertStringStartsWith('cache:discover-tmdb:', $cacheKey);
+        }
+        self::assertCount(3, $source->discoverMovieRequests);
+    }
+
+    public function testSearchUsesTmdbEvenWhenPostgresHasLocalResults(): void
+    {
+        $source = new StubContentSource();
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->expects(self::never())->method('searchMedia');
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->expects(self::once())->method('saveMovieSummaries');
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->search('matrix', [
+            'type' => 'movie',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame('Result for matrix', $result['results'][0]['title']);
+        self::assertCount(1, $source->searchMovieRequests);
+    }
+
+    public function testSearchPassesTypeQueryFiltersAndPageToTmdb(): void
+    {
+        $source = new StubContentSource();
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->expects(self::never())->method('searchMedia');
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $service->search('matrix', [
+            'type' => 'tv',
+            'page' => 2,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+            'year' => 2020,
+            'region' => 'RU',
+        ]);
+
+        self::assertSame('matrix', $source->searchTvRequests[0]['query']);
+        self::assertSame(2, $source->searchTvRequests[0]['params']['page']);
+        self::assertSame(2020, $source->searchTvRequests[0]['params']['first_air_date_year']);
+        self::assertSame('RU', $source->searchTvRequests[0]['params']['region']);
+    }
+
+    public function testSearchPaginatesAcrossTmdbPagesForLargePerPage(): void
+    {
+        $source = new StubContentSource();
+        $source->searchMovieResponses = [
+            2 => [
+                'page' => 2,
+                'results' => array_map(
+                    static fn (int $id): array => ['id' => $id, 'title' => 'Movie ' . $id],
+                    range(21, 40),
+                ),
+                'total_pages' => 3,
+                'total_results' => 60,
+            ],
+            3 => [
+                'page' => 3,
+                'results' => array_map(
+                    static fn (int $id): array => ['id' => $id, 'title' => 'Movie ' . $id],
+                    range(41, 60),
+                ),
+                'total_pages' => 3,
+                'total_results' => 60,
+            ],
+        ];
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->search('matrix', [
+            'type' => 'movie',
+            'page' => 2,
+            'per_page' => 25,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame(2, $result['page']);
+        self::assertCount(25, $result['results']);
+        self::assertSame(26, $result['results'][0]['id']);
+        self::assertSame(50, $result['results'][24]['id']);
+        self::assertSame([2, 3], array_column(array_column($source->searchMovieRequests, 'params'), 'page'));
+    }
+
+    public function testSearchFallsBackToTmdbWhenPostgresIsUnavailable(): void
+    {
+        $source = new StubContentSource();
+        $service = new SearchService($source, new SearchRepository(null));
+
+        $result = $service->search('matrix', [
+            'type' => 'movie',
+            'page' => 1,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame('Result for matrix', $result['results'][0]['title']);
+        self::assertCount(1, $source->searchMovieRequests);
+    }
+
+    public function testSearchCacheKeysDoNotMixQueriesTypesOrPages(): void
+    {
+        $source = new StubContentSource();
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $cacheKeys = [];
+        $mediaRepository->expects(self::exactly(4))
+            ->method('getCachedResponse')
+            ->willReturnCallback(static function (string $key) use (&$cacheKeys): ?array {
+                $cacheKeys[] = $key;
+
+                return null;
+            });
+        $mediaRepository->expects(self::exactly(4))->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        foreach (
+            [
+                ['q' => 'matrix', 'type' => 'movie', 'page' => 1],
+                ['q' => 'dune', 'type' => 'movie', 'page' => 1],
+                ['q' => 'matrix', 'type' => 'tv', 'page' => 1],
+                ['q' => 'matrix', 'type' => 'movie', 'page' => 2],
+            ] as $request
+        ) {
+            $criteria = [
+                'type' => $request['type'],
+                'page' => $request['page'],
+                'per_page' => 20,
+                'sort_by' => 'popularity.desc',
+            ];
+            $service->search($request['q'], $criteria);
+        }
+
+        self::assertCount(4, array_unique($cacheKeys));
+        foreach ($cacheKeys as $cacheKey) {
+            self::assertStringStartsWith('cache:search-tmdb:', $cacheKey);
+        }
+    }
+
     public function testMovieYearSortIsMappedToTmdbReleaseDateSort(): void
     {
         $source = new StubContentSource();

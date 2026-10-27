@@ -19,6 +19,24 @@ final class StubContentSource implements ContentSourceInterface
     /** @var array<string, mixed> */
     public array $lastDiscoverTvParams = [];
 
+    /** @var list<array<string, mixed>> */
+    public array $discoverMovieRequests = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $discoverMovieResponses = [];
+
+    /** @var list<array{query: string, params: array<string, mixed>}> */
+    public array $searchMovieRequests = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $searchMovieResponses = [];
+
+    /** @var list<array{query: string, params: array<string, mixed>}> */
+    public array $searchTvRequests = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $searchTvResponses = [];
+
     // ── Movies ──────────────────────────────────────────────
 
     public function getPopularMovies(): array
@@ -59,8 +77,16 @@ final class StubContentSource implements ContentSourceInterface
     public function discoverMovies(array $params = []): array
     {
         $this->lastDiscoverMovieParams = $params;
+        $this->discoverMovieRequests[] = $params;
 
-        return $this->listResponse([['id' => 5, 'title' => 'Discovered Movie']]);
+        $page = (int) ($params['page'] ?? 1);
+
+        return $this->discoverMovieResponses[$page] ?? [
+            'page' => $page,
+            'results' => [['id' => 5, 'title' => 'Discovered Movie']],
+            'total_pages' => 1,
+            'total_results' => 1,
+        ];
     }
 
     public function getMovie(int $id): array
@@ -75,7 +101,15 @@ final class StubContentSource implements ContentSourceInterface
 
     public function search(string $query, array $params = []): array
     {
-        return $this->listResponse([['id' => 6, 'title' => 'Result for ' . $query]]);
+        $this->searchMovieRequests[] = ['query' => $query, 'params' => $params];
+        $page = (int) ($params['page'] ?? 1);
+
+        return $this->searchMovieResponses[$page] ?? [
+            'page' => $page,
+            'results' => [['id' => 6, 'title' => 'Result for ' . $query]],
+            'total_pages' => 1,
+            'total_results' => 1,
+        ];
     }
 
     // ── TV Shows ────────────────────────────────────────────
@@ -140,7 +174,15 @@ final class StubContentSource implements ContentSourceInterface
 
     public function searchTv(string $query, array $params = []): array
     {
-        return $this->listResponse([['id' => 14, 'name' => 'TV Result for ' . $query]]);
+        $this->searchTvRequests[] = ['query' => $query, 'params' => $params];
+        $page = (int) ($params['page'] ?? 1);
+
+        return $this->searchTvResponses[$page] ?? [
+            'page' => $page,
+            'results' => [['id' => 14, 'name' => 'TV Result for ' . $query]],
+            'total_pages' => 1,
+            'total_results' => 1,
+        ];
     }
 
     public function discoverTv(array $params = []): array
