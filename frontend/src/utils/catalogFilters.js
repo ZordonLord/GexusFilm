@@ -1,13 +1,15 @@
-import { normalizeSearchQuery } from "./search";
+import { normalizeSearchQuery } from "./search.js";
 
 export const DEFAULT_SORT = "popularity.desc";
 export const CATALOG_DEFAULT_SORT = "year.desc";
 export const YEAR_MIN = 1870;
 export const YEAR_MAX = new Date().getFullYear();
-export const DEFAULT_CATALOG_PER_PAGE = 50;
-export const PAGE_SIZE_OPTIONS = [25, 50, 100];
+export const DEFAULT_CATALOG_PER_PAGE = 20;
+export const PAGE_SIZE_OPTIONS = [20, 40, 80];
 
 export const ALLOWED_TYPES = new Set(["all", "movie", "tv"]);
+export const ALLOWED_CATALOG_TYPES = new Set(["movie", "tv"]);
+export const SEARCH_PAGE_SIZE_OPTIONS = [20, 25, 50, 100];
 
 export const ALLOWED_SORTS = new Set([
   "popularity.desc",
@@ -27,10 +29,13 @@ export const SORT_OPTIONS = [
   { value: "year.asc", label: "Сначала старые" },
 ];
 
-export const TYPE_OPTIONS = [
-  { value: "all", label: "Всё" },
+export const CATALOG_TYPE_OPTIONS = [
   { value: "movie", label: "Фильмы" },
   { value: "tv", label: "Сериалы" },
+];
+export const TYPE_OPTIONS = [
+  { value: "all", label: "Всё" },
+  ...CATALOG_TYPE_OPTIONS,
 ];
 
 function parsePositiveIds(value) {
@@ -43,7 +48,13 @@ function parsePositiveIds(value) {
     .slice(0, 5);
 }
 
-export function parseCatalogParams(searchParams, { fallbackType = "all", defaultSort = DEFAULT_SORT, defaultPerPage = 20 } = {}) {
+export function parseCatalogParams(searchParams, {
+  fallbackType = "all",
+  defaultSort = DEFAULT_SORT,
+  defaultPerPage = 20,
+  pageSizeOptions = SEARCH_PAGE_SIZE_OPTIONS,
+  allowedTypes = ALLOWED_TYPES,
+} = {}) {
   const typeParam = searchParams.get("type");
   const sortParam = searchParams.get("sort_by");
   const pageParam = Number.parseInt(searchParams.get("page") || "1", 10);
@@ -59,7 +70,7 @@ export function parseCatalogParams(searchParams, { fallbackType = "all", default
 
   return {
     query: normalizeSearchQuery(searchParams.get("q")),
-    type: fallbackType === "all" && ALLOWED_TYPES.has(typeParam) ? typeParam : fallbackType,
+    type: allowedTypes.has(typeParam) ? typeParam : fallbackType,
     genreId: explicitGenreId,
     genreIds,
     yearFrom: searchParams.get("year_from") || "",
@@ -73,10 +84,7 @@ export function parseCatalogParams(searchParams, { fallbackType = "all", default
     releasedOnly: !["0", "false"].includes(searchParams.get("released_only")),
     sortBy: ALLOWED_SORTS.has(sortParam) ? sortParam : defaultSort,
     page: Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1,
-    perPage: Number.isInteger(perPageParam)
-      && (defaultPerPage === DEFAULT_CATALOG_PER_PAGE
-        ? PAGE_SIZE_OPTIONS.includes(perPageParam)
-        : [20, ...PAGE_SIZE_OPTIONS].includes(perPageParam))
+    perPage: Number.isInteger(perPageParam) && pageSizeOptions.includes(perPageParam)
       ? perPageParam
       : defaultPerPage,
   };

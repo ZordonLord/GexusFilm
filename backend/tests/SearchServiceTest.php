@@ -85,6 +85,159 @@ final class SearchServiceTest extends TestCase
         self::assertSame(2, $source->lastDiscoverMovieParams['page']);
     }
 
+    public function testDiscoverUsesTmdbTotalPagesToLimitCatalogPagination(): void
+    {
+        $source = new StubContentSource();
+        $source->discoverMovieResponses[2] = [
+            'page' => 2,
+            'results' => [['id' => 21, 'title' => 'Last page movie']],
+            'total_pages' => 2,
+            'total_results' => 1000,
+        ];
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->discover([
+            'type' => 'movie',
+            'page' => 2,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame(2, $result['total_pages']);
+        self::assertSame('Last page movie', $result['results'][0]['title']);
+    }
+
+    public function testDiscoverMapsTmdbTotalPagesToRequestedPageSize(): void
+    {
+        $source = new StubContentSource();
+        foreach ([1, 2] as $upstreamPage) {
+            $source->discoverMovieResponses[$upstreamPage] = [
+                'page' => $upstreamPage,
+                'results' => array_map(
+                    static fn (int $id): array => ['id' => (($upstreamPage - 1) * 20) + $id],
+                    range(1, 20),
+                ),
+                'total_pages' => 7,
+                'total_results' => 1000,
+            ];
+        }
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->discover([
+            'type' => 'movie',
+            'page' => 1,
+            'per_page' => 40,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame(4, $result['total_pages']);
+    }
+
+    public function testDiscoverCapsTmdbPaginationAtFiveHundredPages(): void
+    {
+        foreach (
+            [
+                20 => ['page' => 500, 'upstream_pages' => [500]],
+                40 => ['page' => 250, 'upstream_pages' => [499, 500]],
+                80 => ['page' => 125, 'upstream_pages' => [497, 498, 499, 500]],
+            ] as $perPage => $expected
+        ) {
+            $source = new StubContentSource();
+            foreach ($expected['upstream_pages'] as $upstreamPage) {
+                $source->discoverMovieResponses[$upstreamPage] = [
+                    'page' => $upstreamPage,
+                    'results' => array_map(
+                        static fn (int $item): array => ['id' => (($upstreamPage - 1) * 20) + $item],
+                        range(1, 20),
+                    ),
+                    'total_pages' => 1001,
+                    'total_results' => 20001,
+                ];
+            }
+            $mediaRepository = $this->createMock(MovieRepository::class);
+            $mediaRepository->method('getCachedResponse')->willReturn(null);
+            $mediaRepository->method('saveCachedResponse');
+            $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+            $result = $service->discover([
+                'type' => 'movie',
+                'page' => $expected['page'],
+                'per_page' => $perPage,
+                'sort_by' => 'popularity.desc',
+            ]);
+
+            self::assertSame((int) ceil(10000 / $perPage), $result['total_pages']);
+            self::assertSame($expected['upstream_pages'], array_column($source->discoverMovieRequests, 'page'));
+            self::assertCount($perPage, $result['results']);
+        }
+    }
+
+    public function testDiscoverClampsRequestedPageBeyondTmdbLimit(): void
+    {
+        $source = new StubContentSource();
+        $source->discoverMovieResponses[500] = [
+            'page' => 500,
+            'results' => [['id' => 10000, 'title' => 'Last supported page']],
+            'total_pages' => 1001,
+            'total_results' => 20001,
+        ];
+        $mediaRepository = $this->createMock(MovieRepository::class);
+        $mediaRepository->method('getCachedResponse')->willReturn(null);
+        $mediaRepository->method('saveCachedResponse');
+        $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+        $result = $service->discover([
+            'type' => 'movie',
+            'page' => 501,
+            'per_page' => 20,
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        self::assertSame(500, $result['page']);
+        self::assertSame(500, $source->lastDiscoverMovieParams['page']);
+        self::assertSame('Last supported page', $result['results'][0]['title']);
+    }
+
+    public function testDiscoverFetchesWholeTmdbPagesForMultiplesOfTwenty(): void
+    {
+        foreach ([40 => [5, 6], 80 => [9, 10, 11, 12]] as $perPage => $expectedPages) {
+            $source = new StubContentSource();
+            foreach (range(1, 20) as $upstreamPage) {
+                $source->discoverMovieResponses[$upstreamPage] = [
+                    'page' => $upstreamPage,
+                    'results' => array_map(
+                        static fn (int $item): array => ['id' => (($upstreamPage - 1) * 20) + $item],
+                        range(1, 20),
+                    ),
+                    'total_pages' => 20,
+                    'total_results' => 400,
+                ];
+            }
+            $mediaRepository = $this->createMock(MovieRepository::class);
+            $mediaRepository->method('getCachedResponse')->willReturn(null);
+            $mediaRepository->method('saveCachedResponse');
+            $service = new SearchService($source, new SearchRepository($mediaRepository), $mediaRepository);
+
+            $result = $service->discover([
+                'type' => 'movie',
+                'page' => 3,
+                'per_page' => $perPage,
+                'sort_by' => 'popularity.desc',
+            ]);
+
+            self::assertSame($expectedPages, array_column($source->discoverMovieRequests, 'page'));
+            self::assertCount($perPage, $result['results']);
+            self::assertSame((3 - 1) * $perPage + 1, $result['results'][0]['id']);
+            self::assertSame(3, $result['page']);
+        }
+    }
+
     public function testDiscoverFallsBackToTmdbWhenPostgresIsUnavailable(): void
     {
         $source = new StubContentSource();
@@ -133,7 +286,7 @@ final class SearchServiceTest extends TestCase
 
         self::assertCount(3, array_unique($cacheKeys));
         foreach ($cacheKeys as $cacheKey) {
-            self::assertStringStartsWith('cache:discover-tmdb:', $cacheKey);
+            self::assertStringStartsWith('cache:discover-tmdb-page-cap-v2:', $cacheKey);
         }
         self::assertCount(3, $source->discoverMovieRequests);
     }
@@ -275,7 +428,7 @@ final class SearchServiceTest extends TestCase
 
         self::assertCount(4, array_unique($cacheKeys));
         foreach ($cacheKeys as $cacheKey) {
-            self::assertStringStartsWith('cache:search-tmdb:', $cacheKey);
+            self::assertStringStartsWith('cache:search-tmdb-page-cap-v2:', $cacheKey);
         }
     }
 

@@ -10,6 +10,9 @@ use Throwable;
 
 final class SearchService implements SearchServiceInterface
 {
+    private const TMDB_RESULTS_PER_PAGE = 20;
+    private const TMDB_MAX_PAGES = 500;
+
     public function __construct(
         private ContentSourceInterface $contentSource,
         private SearchRepository $searchRepository,
@@ -20,8 +23,9 @@ final class SearchService implements SearchServiceInterface
     /** @param array<string, mixed> $criteria */
     public function search(string $query, array $criteria): array
     {
+        $criteria['page'] = $this->clampRequestedPage($criteria['page'], $criteria['per_page']);
         // Поисковый кэш содержит ответы TMDB, не ограниченные локальными снапшотами.
-        $cacheKey = CacheKeyFactory::searchQuery('search-tmdb', ['q' => $query] + $criteria);
+        $cacheKey = CacheKeyFactory::searchQuery('search-tmdb-page-cap-v2', ['q' => $query] + $criteria);
         $cached = $this->getCached($cacheKey);
 
         if ($cached !== null) {
@@ -39,8 +43,9 @@ final class SearchService implements SearchServiceInterface
     /** @param array<string, mixed> $criteria */
     public function discover(array $criteria): array
     {
+        $criteria['page'] = $this->clampRequestedPage($criteria['page'], $criteria['per_page']);
         // Каталожный кэш содержит только выдачу источника; старые локальные ответы не переиспользуются.
-        $cacheKey = CacheKeyFactory::searchQuery('discover-tmdb', $criteria);
+        $cacheKey = CacheKeyFactory::searchQuery('discover-tmdb-page-cap-v2', $criteria);
         $cached = $this->getCached($cacheKey);
 
         if ($cached !== null) {
@@ -61,9 +66,10 @@ final class SearchService implements SearchServiceInterface
         $perPage = (int) $criteria['per_page'];
         $requestedPage = (int) $criteria['page'];
         $resultOffset = ($requestedPage - 1) * $perPage;
-        $firstUpstreamPage = intdiv($resultOffset, 20) + 1;
-        $skipFromFirstPage = $resultOffset % 20;
-        $upstreamPages = max(1, (int) ceil(($skipFromFirstPage + $perPage) / 20));
+        $firstUpstreamPage = intdiv($resultOffset, self::TMDB_RESULTS_PER_PAGE) + 1;
+        $skipFromFirstPage = $resultOffset % self::TMDB_RESULTS_PER_PAGE;
+        $upstreamPages = max(1, (int) ceil(($skipFromFirstPage + $perPage) / self::TMDB_RESULTS_PER_PAGE));
+        $upstreamPages = min($upstreamPages, self::TMDB_MAX_PAGES - $firstUpstreamPage + 1);
         $params = [];
 
         if (($criteria['region'] ?? null) !== null) {
@@ -94,7 +100,7 @@ final class SearchService implements SearchServiceInterface
         return [
             'page' => $requestedPage,
             'results' => array_slice($results, $skipFromFirstPage, $perPage),
-            'total_pages' => $totalResults === 0 ? 0 : (int) ceil($totalResults / $perPage),
+            'total_pages' => $this->catalogTotalPages($totalUpstreamPages, $perPage),
             'total_results' => $totalResults,
         ];
     }
@@ -105,9 +111,10 @@ final class SearchService implements SearchServiceInterface
         $perPage = (int) $criteria['per_page'];
         $requestedPage = (int) $criteria['page'];
         $resultOffset = ($requestedPage - 1) * $perPage;
-        $firstUpstreamPage = intdiv($resultOffset, 20) + 1;
-        $skipFromFirstPage = $resultOffset % 20;
-        $upstreamPages = max(1, (int) ceil(($skipFromFirstPage + $perPage) / 20));
+        $firstUpstreamPage = intdiv($resultOffset, self::TMDB_RESULTS_PER_PAGE) + 1;
+        $skipFromFirstPage = $resultOffset % self::TMDB_RESULTS_PER_PAGE;
+        $upstreamPages = max(1, (int) ceil(($skipFromFirstPage + $perPage) / self::TMDB_RESULTS_PER_PAGE));
+        $upstreamPages = min($upstreamPages, self::TMDB_MAX_PAGES - $firstUpstreamPage + 1);
 
         $params = [
             'sort_by' => $this->sourceSort($criteria),
@@ -184,9 +191,25 @@ final class SearchService implements SearchServiceInterface
         return [
             'page' => $requestedPage,
             'results' => $results,
-            'total_pages' => $totalResults === 0 ? 0 : (int) ceil($totalResults / $perPage),
+            'total_pages' => $this->catalogTotalPages($totalPages, $perPage),
             'total_results' => $totalResults,
         ];
+    }
+
+    private function catalogTotalPages(int $upstreamPages, int $perPage): int
+    {
+        if ($upstreamPages <= 0) {
+            return 0;
+        }
+
+        return (int) ceil((min($upstreamPages, self::TMDB_MAX_PAGES) * self::TMDB_RESULTS_PER_PAGE) / $perPage);
+    }
+
+    private function clampRequestedPage(int $requestedPage, int $perPage): int
+    {
+        $lastAvailablePage = $this->catalogTotalPages(self::TMDB_MAX_PAGES, $perPage);
+
+        return min($requestedPage, $lastAvailablePage);
     }
 
     /**

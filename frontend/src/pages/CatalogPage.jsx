@@ -18,10 +18,11 @@ import {
 } from "../services/api";
 import {
   CATALOG_DEFAULT_SORT,
+  ALLOWED_CATALOG_TYPES,
   DEFAULT_CATALOG_PER_PAGE,
   PAGE_SIZE_OPTIONS,
   SORT_OPTIONS,
-  TYPE_OPTIONS,
+  CATALOG_TYPE_OPTIONS,
   YEAR_MAX,
   YEAR_MIN,
   parseCatalogParams,
@@ -46,14 +47,20 @@ function getFilterDraft({ type, sortBy, genreIds, excludedGenreIds, year, yearFr
 }
 
 export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
-  const catalogType = movieOnly ? "movie" : tvOnly ? "tv" : "all";
+  const catalogType = movieOnly ? "movie" : tvOnly ? "tv" : "movie";
   const { isMobile } = useSidebar();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = useMemo(() => parseCatalogParams(searchParams, {
     fallbackType: catalogType,
+    allowedTypes: movieOnly
+      ? new Set(["movie"])
+      : tvOnly
+        ? new Set(["tv"])
+        : ALLOWED_CATALOG_TYPES,
     defaultSort: CATALOG_DEFAULT_SORT,
     defaultPerPage: DEFAULT_CATALOG_PER_PAGE,
-  }), [catalogType, searchParams]);
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+  }), [catalogType, movieOnly, searchParams, tvOnly]);
   const {
     genreIds: selectedGenres,
     excludedGenreIds,
@@ -165,40 +172,9 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
         if (country) params.country = country;
         params.released_only = urlState.releasedOnly ? 1 : 0;
 
-        let data;
-
-        if (mediaType === "all") {
-          // Загружаем и фильмы, и сериалы, объединяем
-          const [moviesData, tvData] = await Promise.all([
-            getDiscoverMovies(params),
-            getDiscoverTv(params),
-          ]);
-
-          if (cancelled) return;
-
-          const movies = (moviesData.results || []).map((item) => ({
-            ...item,
-            media_type: "movie",
-          }));
-          const tv = (tvData.results || []).map((item) => ({
-            ...item,
-            media_type: "tv",
-          }));
-
-          // Чередуем фильмы и сериалы для разнообразия
-          const merged = [];
-          const maxLen = Math.max(movies.length, tv.length);
-          for (let i = 0; i < maxLen; i++) {
-            if (i < movies.length) merged.push(movies[i]);
-            if (i < tv.length) merged.push(tv[i]);
-          }
-
-          data = { results: merged, total_pages: Math.max(moviesData.total_pages || 1, tvData.total_pages || 1) };
-        } else if (mediaType === "movie") {
-          data = await getDiscoverMovies(params);
-        } else {
-          data = await getDiscoverTv(params);
-        }
+        const data = mediaType === "tv"
+          ? await getDiscoverTv(params)
+          : await getDiscoverMovies(params);
 
         if (cancelled) return;
 
@@ -432,19 +408,17 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
           <div className="catalog-page">
             {/* Заголовок */}
             <div className="catalog-page__header">
-              <h1 className="catalog-page__title">{movieOnly ? "Фильмы" : tvOnly ? "Сериалы" : "Каталог"}</h1>
+              <h1 className="catalog-page__title">{mediaType === "tv" ? "Сериалы" : "Фильмы"}</h1>
               <p className="catalog-page__subtitle">
-                {movieOnly
-                  ? "Подберите фильм по жанрам и сортировке"
-                  : tvOnly
-                    ? "Подберите сериал по жанрам и сортировке"
-                    : "Все фильмы и сериалы в одном месте"}
+                {mediaType === "tv"
+                  ? "Подберите сериал по жанрам и сортировке"
+                  : "Подберите фильм по жанрам и сортировке"}
               </p>
             </div>
 
             {!movieOnly && !tvOnly && (
               <div className="catalog-page__type-switch" role="group" aria-label="Тип контента">
-                {TYPE_OPTIONS.map((option) => (
+                {CATALOG_TYPE_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
