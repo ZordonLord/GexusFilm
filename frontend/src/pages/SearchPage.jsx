@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router-dom";
 
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
+import { useSidebar } from "../components/SidebarContext";
 import Footer from "../components/Footer";
 import MediaBrowser from "../components/MediaBrowser";
 import MediaFilterToolbar from "../components/MediaFilterToolbar";
@@ -17,6 +18,8 @@ import {
 } from "../services/api";
 import {
   DEFAULT_SORT,
+  SORT_OPTIONS,
+  TYPE_OPTIONS,
   YEAR_MAX,
   YEAR_MIN,
   parseCatalogParams,
@@ -49,6 +52,7 @@ function mergeResponses(responses, types) {
 }
 
 export default function SearchPage() {
+  const { isMobile } = useSidebar();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = useMemo(() => parseCatalogParams(searchParams), [searchParams]);
   const [items, setItems] = useState([]);
@@ -58,6 +62,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const updateUrl = useCallback((changes) => {
     const nextParams = updateCatalogParams(searchParams, changes, { defaultSort: DEFAULT_SORT });
@@ -149,7 +154,6 @@ export default function SearchPage() {
   }, [reloadKey, urlState]);
 
   const activeFiltersCount = [
-    urlState.type !== "all",
     urlState.genreIds.length > 0,
     urlState.excludedGenreIds.length > 0,
     urlState.year,
@@ -157,7 +161,6 @@ export default function SearchPage() {
     urlState.yearFrom || urlState.yearTo,
     urlState.voteCountGte,
     urlState.country,
-    urlState.sortBy !== DEFAULT_SORT,
   ].filter(Boolean).length;
 
   const handlePageChange = (page) => {
@@ -209,39 +212,84 @@ export default function SearchPage() {
 
           </div>
 
+          <div className="search-page__type-switch" role="group" aria-label="Тип контента">
+            {TYPE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={urlState.type === option.value ? "is-active" : ""}
+                onClick={() => updateUrl({ type: option.value, page: "" })}
+                aria-pressed={urlState.type === option.value}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
           <SearchQueryForm
             query={urlState.query}
             searchParams={searchParams}
             setSearchParams={setSearchParams}
           />
 
-          <MediaFilterToolbar
-            className="search-page__filters"
-            heading="Фильтры"
-            activeFiltersCount={activeFiltersCount}
-            onReset={clearFilters}
-            type={urlState.type}
-            onTypeChange={(value) => updateUrl({ type: value, page: "" })}
-            sortBy={urlState.sortBy}
-            onSortChange={(value) => updateUrl({ sort_by: value, page: "" })}
-            genres={genres}
-            includedIds={urlState.genreIds}
-            excludedIds={urlState.excludedGenreIds}
-            onGenresChange={handleGenresChange}
-            genreDisabled={Boolean(urlState.query)}
-            genreDisabledMessage={urlState.query ? "Жанр доступен для подборки без поискового запроса." : ""}
-            discoverOnlyDisabled={Boolean(urlState.query)}
-            yearFrom={urlState.yearFrom || urlState.year}
-            yearTo={urlState.yearTo || urlState.year}
-            onYearRangeChange={handleYearRangeChange}
-            minRating={urlState.minRating}
-            onMinRatingChange={(value) => updateUrl({ min_rating: value, page: "" })}
-            voteCountGte={urlState.voteCountGte}
-            onVoteCountGteChange={(value) => updateUrl({ vote_count_gte: value, "vote_count.gte": "", page: "" })}
-            country={urlState.country}
-            onCountryChange={(value) => updateUrl({ country: value, page: "" })}
-            idPrefix="search-filter"
-          />
+          <div className="search-page__controls">
+            <div className="search-page__toolbar-actions" aria-label="Сортировка и фильтры поиска">
+              <label className="search-page__sort-control">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M7 12h10m-7 5h4" /></svg>
+                <span className="search-page__sort-label">{SORT_OPTIONS.find((option) => option.value === urlState.sortBy)?.label || "Сортировка"}</span>
+                <select value={urlState.sortBy} onChange={(event) => updateUrl({ sort_by: event.target.value, page: "" })} aria-label="Сортировка">
+                  {SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <svg className="search-page__control-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m7 10 5 5 5-5" /></svg>
+              </label>
+
+              <button
+                type="button"
+                className={`search-page__filter-trigger${filtersOpen ? " is-active" : ""}`}
+                onClick={() => setFiltersOpen((open) => !open)}
+                aria-expanded={filtersOpen}
+                aria-controls="search-filter-panel"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M7 12h10m-7 5h4" /></svg>
+                Фильтры
+                {activeFiltersCount > 0 && <span className="search-page__filter-count">{activeFiltersCount}</span>}
+              </button>
+            </div>
+
+            {filtersOpen && isMobile && <button type="button" className="search-page__filter-scrim" onClick={() => setFiltersOpen(false)} aria-label="Закрыть фильтры" />}
+
+            <div className={`search-page__filter-shell${filtersOpen ? " is-open" : ""}`}>
+              <MediaFilterToolbar
+                id="search-filter-panel"
+                className="search-page__filters"
+                heading="Фильтры"
+                activeFiltersCount={activeFiltersCount}
+                onReset={clearFilters}
+                showType={false}
+                showSort={false}
+                mobileDrawer={isMobile}
+                compactHeader={isMobile}
+                onClose={() => setFiltersOpen(false)}
+                genres={genres}
+                includedIds={urlState.genreIds}
+                excludedIds={urlState.excludedGenreIds}
+                onGenresChange={handleGenresChange}
+                genreDisabled={Boolean(urlState.query)}
+                genreDisabledMessage={urlState.query ? "Жанр доступен для подборки без поискового запроса." : ""}
+                discoverOnlyDisabled={Boolean(urlState.query)}
+                yearFrom={urlState.yearFrom || urlState.year}
+                yearTo={urlState.yearTo || urlState.year}
+                onYearRangeChange={handleYearRangeChange}
+                minRating={urlState.minRating}
+                onMinRatingChange={(value) => updateUrl({ min_rating: value, page: "" })}
+                voteCountGte={urlState.voteCountGte}
+                onVoteCountGteChange={(value) => updateUrl({ vote_count_gte: value, "vote_count.gte": "", page: "" })}
+                country={urlState.country}
+                onCountryChange={(value) => updateUrl({ country: value, page: "" })}
+                idPrefix="search-filter"
+              />
+            </div>
+          </div>
 
           <MediaBrowser
             items={items}

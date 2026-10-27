@@ -222,10 +222,6 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
 
   // Сброс страницы при смене фильтров
   const handleMediaTypeChange = (type) => {
-    if (isMobile) {
-      setDraftFilters((draft) => ({ ...draft, type }));
-      return;
-    }
     updateUrl({ type, page: "" });
   };
 
@@ -243,21 +239,16 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
   };
 
   const activeFiltersCount = [
-    !movieOnly && !tvOnly && mediaType !== "all",
     selectedGenres.length > 0,
     excludedGenreIds.length > 0,
     minRating,
     voteCountGte,
     country,
     yearFrom || yearTo || year,
-    sortBy !== CATALOG_DEFAULT_SORT,
     !releasedOnly,
   ].filter(Boolean).length;
 
   const activeFilterChips = [
-    !movieOnly && !tvOnly && committedFilters.type !== "all"
-      ? { key: "type", label: TYPE_OPTIONS.find((option) => option.value === committedFilters.type)?.label || committedFilters.type }
-      : null,
     committedFilters.genreIds.length > 0 || committedFilters.excludedGenreIds.length > 0
       ? { key: "genres", label: `Жанры · ${committedFilters.genreIds.length + committedFilters.excludedGenreIds.length}` }
       : null,
@@ -267,17 +258,27 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
     committedFilters.minRating ? { key: "rating", label: `Рейтинг от ${committedFilters.minRating}` } : null,
     committedFilters.voteCountGte ? { key: "votes", label: `Голосов от ${committedFilters.voteCountGte}` } : null,
     committedFilters.country ? { key: "country", label: committedFilters.country } : null,
-    committedFilters.sortBy !== CATALOG_DEFAULT_SORT
-      ? { key: "sort", label: SORT_OPTIONS.find((option) => option.value === committedFilters.sortBy)?.label || "Сортировка" }
-      : null,
     !committedFilters.releasedOnly ? { key: "released", label: "Включая будущие" } : null,
   ].filter(Boolean);
 
   const clearFilters = () => {
-    setSearchParams(new URLSearchParams(), { replace: true });
+    updateUrl({
+      genre_ids: "",
+      exclude_genre_ids: "",
+      genre_id: "",
+      year: "",
+      year_from: "",
+      year_to: "",
+      min_rating: "",
+      vote_count_gte: "",
+      "vote_count.gte": "",
+      country: "",
+      released_only: "",
+      page: "",
+    });
     setDraftFilters(getFilterDraft({
-      type: catalogType,
-      sortBy: CATALOG_DEFAULT_SORT,
+      type: mediaType,
+      sortBy,
       genreIds: [],
       excludedGenreIds: [],
       year: "",
@@ -292,8 +293,8 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
   const resetFilters = () => {
     if (isMobile) {
       setDraftFilters(getFilterDraft({
-        type: catalogType,
-        sortBy: CATALOG_DEFAULT_SORT,
+        type: mediaType,
+        sortBy,
         genreIds: [],
         excludedGenreIds: [],
         year: "",
@@ -311,7 +312,6 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
   const handleSortChange = (nextSort) => {
     if (isMobile) {
       setDraftFilters((draft) => ({ ...draft, sortBy: nextSort }));
-      return;
     }
     updateUrl({ sort_by: nextSort, page: "" });
   };
@@ -442,83 +442,108 @@ export default function CatalogPage({ movieOnly = false, tvOnly = false }) {
               </p>
             </div>
 
-            <div className={`catalog-page__filter-shell ${filtersOpen ? "is-open" : ""}`}>
-              <button
-                type="button"
-                className="catalog-page__mobile-filter-trigger"
-                onClick={() => {
-                  setDraftFilters(committedFilters);
-                  setFiltersOpen(true);
-                }}
-                aria-expanded={filtersOpen}
-                aria-controls="catalog-filter-drawer"
-              >
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10m-7 6h4" /></svg>
-                Фильтры{activeFiltersCount > 0 ? ` · ${activeFiltersCount}` : ""}
-              </button>
-              {filtersOpen && <button type="button" className="catalog-page__filter-scrim" onClick={() => setFiltersOpen(false)} aria-label="Закрыть фильтры" />}
-              <MediaFilterToolbar
-              mobileDrawer
-              compactHeader
-              onClose={() => setFiltersOpen(false)}
-              onApply={applyDraftFilters}
-              id="catalog-filter-drawer"
-              className="catalog-page__filters"
-              heading="Фильтры каталога"
-              activeFiltersCount={activeFiltersCount}
-              onReset={resetFilters}
-              type={visibleFilters.type}
-              onTypeChange={handleMediaTypeChange}
-              showType={!movieOnly && !tvOnly}
-              showSort={isMobile}
-              sortBy={visibleFilters.sortBy}
-              onSortChange={handleSortChange}
-              genres={genres}
-              includedIds={visibleFilters.genreIds}
-              excludedIds={visibleFilters.excludedGenreIds}
-              onGenresChange={handleGenresChange}
-              yearFrom={visibleFilters.yearFrom}
-              yearTo={visibleFilters.yearTo}
-              onYearRangeChange={handleYearRangeChange}
-              minRating={visibleFilters.minRating}
-              onMinRatingChange={handleMinRatingChange}
-              releasedOnly={visibleFilters.releasedOnly}
-              onReleasedOnlyChange={handleReleasedOnlyChange}
-              voteCountGte={visibleFilters.voteCountGte}
-              onVoteCountGteChange={handleVoteCountChange}
-              country={visibleFilters.country}
-              onCountryChange={handleCountryChange}
-              activeFilterChips={activeFilterChips}
-              onRemoveFilter={removeFilter}
-              idPrefix="catalog-filter"
-              />
-            </div>
-
-            <div className="catalog-page__results-toolbar" aria-label="Настройки отображения результатов">
-              <label className="catalog-page__sort-control">
-                <span>Сортировка</span>
-                <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)}>
-                  {SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
-              <label className="catalog-page__page-size-control">
-                <span>Показывать</span>
-                <select value={perPage} onChange={(event) => handlePerPageChange(event.target.value)} aria-label="Количество карточек на странице">
-                  {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size}</option>)}
-                </select>
-              </label>
-              <div className="catalog-page__view-toolbar" aria-label="Режим отображения каталога">
-                <span className="catalog-page__view-label">Вид каталога</span>
-              <div className="catalog-page__view-switch" role="group">
-                <button type="button" className={viewMode === "grid" ? "is-active" : ""} onClick={() => handleViewChange("grid")} aria-pressed={viewMode === "grid"}>
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
-                  Сетка
-                </button>
-                <button type="button" className={viewMode === "list" ? "is-active" : ""} onClick={() => handleViewChange("list")} aria-pressed={viewMode === "list"}>
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>
-                  Список
-                </button>
+            {!movieOnly && !tvOnly && (
+              <div className="catalog-page__type-switch" role="group" aria-label="Тип контента">
+                {TYPE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={mediaType === option.value ? "is-active" : ""}
+                    onClick={() => handleMediaTypeChange(option.value)}
+                    aria-pressed={mediaType === option.value}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
+            )}
+
+            <div className="catalog-page__controls">
+              <div className="catalog-page__results-toolbar" aria-label="Настройки отображения результатов">
+                <div className="catalog-page__toolbar-actions">
+                  <label className="catalog-page__sort-control">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M7 12h10m-7 5h4" /></svg>
+                    <span className="catalog-page__sort-label">{SORT_OPTIONS.find((option) => option.value === sortBy)?.label || "Сортировка"}</span>
+                    <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)} aria-label="Сортировка">
+                      {SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                    <svg className="catalog-page__control-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m7 10 5 5 5-5" /></svg>
+                  </label>
+
+                  <button
+                    type="button"
+                    className={`catalog-page__filter-trigger${filtersOpen ? " is-active" : ""}`}
+                    onClick={() => {
+                      if (!filtersOpen && isMobile) setDraftFilters(committedFilters);
+                      setFiltersOpen((open) => !open);
+                    }}
+                    aria-expanded={filtersOpen}
+                    aria-controls="catalog-filter-panel"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M7 12h10m-7 5h4" /></svg>
+                    Фильтры
+                    {activeFiltersCount > 0 && <span className="catalog-page__filter-count">{activeFiltersCount}</span>}
+                  </button>
+                </div>
+
+                <div className="catalog-page__display-controls">
+                  <label className="catalog-page__page-size-control">
+                    <span>На странице</span>
+                    <select value={perPage} onChange={(event) => handlePerPageChange(event.target.value)} aria-label="Количество карточек на странице">
+                      {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size}</option>)}
+                    </select>
+                  </label>
+                  <div className="catalog-page__view-toolbar" aria-label="Режим отображения каталога">
+                    <div className="catalog-page__view-switch" role="group" aria-label="Вид каталога">
+                      <button type="button" className={viewMode === "grid" ? "is-active" : ""} onClick={() => handleViewChange("grid")} aria-pressed={viewMode === "grid"} aria-label="Сетка">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
+                        <span>Сетка</span>
+                      </button>
+                      <button type="button" className={viewMode === "list" ? "is-active" : ""} onClick={() => handleViewChange("list")} aria-pressed={viewMode === "list"} aria-label="Список">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>
+                        <span>Список</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {filtersOpen && isMobile && <button type="button" className="catalog-page__filter-scrim" onClick={() => setFiltersOpen(false)} aria-label="Закрыть фильтры" />}
+
+              <div className={`catalog-page__filter-shell${filtersOpen ? " is-open" : ""}`}>
+                <MediaFilterToolbar
+                  id="catalog-filter-panel"
+                  mobileDrawer={isMobile}
+                  compactHeader={isMobile}
+                  onClose={() => setFiltersOpen(false)}
+                  onApply={applyDraftFilters}
+                  className="catalog-page__filters"
+                  heading="Фильтры каталога"
+                  activeFiltersCount={activeFiltersCount}
+                  onReset={resetFilters}
+                  showType={false}
+                  showSort={false}
+                  sortBy={visibleFilters.sortBy}
+                  onSortChange={handleSortChange}
+                  genres={genres}
+                  includedIds={visibleFilters.genreIds}
+                  excludedIds={visibleFilters.excludedGenreIds}
+                  onGenresChange={handleGenresChange}
+                  yearFrom={visibleFilters.yearFrom}
+                  yearTo={visibleFilters.yearTo}
+                  onYearRangeChange={handleYearRangeChange}
+                  minRating={visibleFilters.minRating}
+                  onMinRatingChange={handleMinRatingChange}
+                  releasedOnly={visibleFilters.releasedOnly}
+                  onReleasedOnlyChange={handleReleasedOnlyChange}
+                  voteCountGte={visibleFilters.voteCountGte}
+                  onVoteCountGteChange={handleVoteCountChange}
+                  country={visibleFilters.country}
+                  onCountryChange={handleCountryChange}
+                  activeFilterChips={activeFilterChips}
+                  onRemoveFilter={removeFilter}
+                  idPrefix="catalog-filter"
+                />
               </div>
             </div>
 

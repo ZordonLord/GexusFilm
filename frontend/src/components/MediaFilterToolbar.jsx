@@ -34,6 +34,7 @@ export default function MediaFilterToolbar({
   onVoteCountGteChange,
   country = "",
   onCountryChange,
+  id,
   idPrefix = "media-filter",
   className = "",
   mobileDrawer = false,
@@ -58,6 +59,7 @@ export default function MediaFilterToolbar({
   const ratingPresets = [6, 7, 8, 9];
   return (
     <MediaToolbar
+      id={id}
       className={`media-filter-toolbar ${className}`.trim()}
       aria-label={compactHeader ? heading : undefined}
       aria-labelledby={compactHeader ? undefined : headingId}
