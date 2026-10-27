@@ -1,6 +1,7 @@
 import MediaCard from "./MediaCard";
 import SkeletonCard from "./SkeletonCard";
 import { getMediaKey } from "../utils/media";
+import { getPaginationItems } from "../utils/pagination";
 
 import "../styles/MediaBrowser.css";
 
@@ -40,13 +41,30 @@ function MediaState({ kind, title, message, onRetry }) {
 function MediaPagination({ page, totalPages, onPageChange }) {
   if (!onPageChange || totalPages <= 1) return null;
 
+  const paginationItems = getPaginationItems(page, totalPages);
+
   return (
     <nav className="media-browser__pagination" aria-label="Пагинация результатов">
       <button type="button" onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1}>
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" /></svg>
         Назад
       </button>
-      <span>Страница {page} из {totalPages}</span>
+      <span className="media-browser__page-list" role="group" aria-label={`Страница ${page} из ${totalPages}`}>
+        {paginationItems.map((item, index) => item === "ellipsis" ? (
+          <span className="media-browser__page-ellipsis" key={`ellipsis-${index}`} aria-hidden="true">…</span>
+        ) : (
+          <button
+            type="button"
+            key={item}
+            className={`media-browser__page-number${item === page ? " is-current" : ""}`}
+            onClick={() => onPageChange(item)}
+            aria-label={`Страница ${item}`}
+            aria-current={item === page ? "page" : undefined}
+          >
+            {item}
+          </button>
+        ))}
+      </span>
       <button type="button" onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages}>
         Вперёд
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" /></svg>
