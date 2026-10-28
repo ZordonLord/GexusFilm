@@ -4,11 +4,13 @@
 сохраняет простую цепочку данных:
 
 ```text
-Frontend → PHP API → PostgreSQL → TMDB
+Frontend → PHP API → ContentSourceInterface → TMDB
+                     └── PostgreSQL: медиаснапшоты + TTL-кэш полных ответов
 ```
 
-PostgreSQL используется как долговременное хранилище медиа и TTL-кэш ответов
-TMDB.
+Каталог и текстовый поиск получают актуальные результаты TMDB через backend.
+PostgreSQL сохраняет media-снапшоты и полные TTL-кэш-ответы, но локальные строки
+не ограничивают полноту выдачи поиска или discover.
 
 Изображения TMDB во frontend загружаются через same-origin маршрут
 `/tmdb-image/{size}/{filename}` на `film.gexus.ru`. Nginx направляет его только
@@ -24,8 +26,8 @@ TMDB.
 - каталоги фильмов: trending, popular, now playing и upcoming;
 - каталоги сериалов: trending, popular, on the air и airing today;
 - страницы деталей фильма и сериала, сезоны и эпизоды;
-- поиск и discover через PostgreSQL с fallback к TMDB;
-- PostgreSQL-кэш ответов TMDB с TTL;
+- поиск фильмов, сериалов и персон; каталог TMDB с URL-фильтрами и пагинацией;
+- PostgreSQL-снапшоты медиа и TTL-кэш полных ответов TMDB;
 - сохранение сводных и детальных данных медиа в PostgreSQL;
 - локальная защита TMDB: singleflight, ограничение запросов и circuit breaker;
 - единый frontend Media UI, front-controller и параметризованный Router.
@@ -42,7 +44,9 @@ TMDB.
 | Code quality | PHP_CodeSniffer 3.13, ESLint |
 | Local infrastructure | Docker Compose |
 
-CSS Modules и обычный CSS — целевой стандарт стилей frontend.
+Стили frontend используют обычный CSS и централизованные CSS tokens; Tailwind
+удалён. Предпочтительный способ организации стилей описан в заметке Obsidian
+`01_Projects/GexusFilm/02_CodingStandards`.
 
 ## Архитектура
 
@@ -52,9 +56,8 @@ React/Vite frontend
         ▼
 public/index.php → Router → Controller → Service
                                       ├── Repository → PostgreSQL
-                                      │                 └── api_cache / movies
-                                      └── ContentSourceInterface
-                                                └── TmdbClient → TMDB
+                                      │                 └── movies snapshots / api_cache
+                                      └── ContentSourceInterface → TmdbClient → TMDB
 ```
 
 Основные принципы:
@@ -62,12 +65,14 @@ public/index.php → Router → Controller → Service
 - `backend/public/index.php` — единая точка входа API;
 - `Router` отвечает только за сопоставление HTTP-метода и пути;
 - Controller принимает параметры и формирует транспортный ответ;
-- Service содержит бизнес-правила и выбирает PostgreSQL либо внешний источник;
+- Service содержит бизнес-правила и выбирает необходимые операции с PostgreSQL и
+  внешним источником; Search/Discover получают актуальную выдачу через TMDB;
 - Repository работает с PostgreSQL и не зависит от внешнего поискового сервиса;
 - `ContentSourceInterface` скрывает конкретный внешний источник;
-- PostgreSQL хранит медиа и долговременный TTL-кэш;
-- недоступность PostgreSQL не скрывает TMDB: каталог может продолжить работу по
-  внешнему источнику, если это позволяет конкретный сценарий;
+- PostgreSQL хранит media-снапшоты и полный TTL-кэш;
+- Search/Discover не ограничиваются полнотой локальных `movies`;
+- при недоступности PostgreSQL каталог/поиск продолжают обращаться к TMDB, если
+  это позволяет конкретный сценарий;
 - локальная защита TMDB не требует внешнего кэша и работает в пределах одного
   хоста.
 
@@ -239,7 +244,8 @@ frontend:
 ```text
 Browser → Nginx → frontend/dist
                  └── /api/* → PHP-FPM → backend/public/index.php
-                                      └── PostgreSQL / TMDB
+                                      ├── ContentSourceInterface → TMDB
+                                      └── PostgreSQL → snapshots / api_cache
 ```
 
 ### 1. Подготовить backend
@@ -314,9 +320,10 @@ sudo systemctl enable --now php8.3-fpm nginx
 sudo systemctl reload nginx
 ```
 
-Для production также настройте HTTPS (например, через Certbot), firewall и
-резервное копирование PostgreSQL. После этого приложение работает как системные
-сервисы и не требует открытого терминала или активной SSH-сессии.
+Для production настройте HTTPS (например, через Certbot), firewall и резервное
+копирование PostgreSQL с хранением копии вне сервера и тестом восстановления.
+Production уже существует, но backup/restore зафиксированы как незакрытый
+операционный риск; подробнее — заметки Obsidian `Decisions` и `ProductBacklog`.
 
 ## API
 
@@ -341,9 +348,11 @@ sudo systemctl reload nginx
 | `/api/discover?type=movie&genre_id=28&page=1` | Подборка по фильтрам |
 | `/api/health` | Состояние PostgreSQL/TMDB-контура |
 
-Поиск сначала проверяет PostgreSQL, а при отсутствии подходящих локальных
-данных обращается к TMDB и сохраняет результат в PostgreSQL. Ответ сохраняет
-совместимый формат `page/results/total_pages/total_results`.
+`/api/search` и `/api/discover` получают актуальные результаты через
+`ContentSourceInterface`/TMDB. PostgreSQL хранит media-снапшоты и полный TTL-кэш
+ответов, но не ограничивает полноту поиска и каталога локальными записями.
+Контракт сохраняет формат `page/results/total_pages/total_results`; детали и
+параметры находятся в заметке Obsidian `01_Projects/GexusFilm/06_APIStandards`.
 
 ## Проверки
 
@@ -373,13 +382,11 @@ npm run build
 
 ## План развития
 
-### Ближайший фокус
-
-1. Стабилизировать каталог, поиск и discover на связке
-   `frontend → PostgreSQL → TMDB`.
-2. Добавить аккаунты и пользовательские данные только после фиксации auth-модели.
-3. Добавить списки, оценки, watch providers и расширенные детали TMDB.
-4. Измерить реальные узкие места до добавления новых инфраструктурных сервисов.
+Каталог, поиск/discover, URL-фильтры, UI состояний и TMDB-пагинация уже реализованы.
+Ближайшие задачи — повторно проверить безопасность локальных credentials, выполнить
+согласованные API/frontend smoke-проверки и измерить фактические узкие места до
+добавления оптимизаций. После этого следующий продуктовый этап — аккаунты; личные
+списки требуют принятой auth-модели и проверки ownership.
 
 ### Отложенная инфраструктура
 
@@ -408,14 +415,13 @@ npm run build
 
 ## Документация
 
-Актуальные продуктовые и архитектурные правила ведутся в Obsidian:
+Источником проектного бэклога и истории является Obsidian-проект GexusFilm:
 
-- ProductBacklog — задачи и критерии готовности;
-- TODO — текущий оперативный фокус;
-- Roadmap — версии и этапы;
-- Changelog — история изменений;
-- Decisions — принятые архитектурные решения;
-- Architecture, API Standards и Database Design — архитектура и контракты.
+- `ProductBacklog` — приоритеты, зависимости и критерии готовности;
+- `TODO` — текущие шаги и проверенный технический контекст;
+- `Roadmap` — этапы и release gates;
+- `Changelog` / `Decisions` — история и rationale;
+- `05_Architecture`, `06_APIStandards`, `07_DatabaseDesign` — текущие технические контракты.
 
 ## Лицензия
 
