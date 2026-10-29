@@ -25,14 +25,10 @@
 }
 
 .site-footer__logo {
-  display: grid;
   width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--primary), #7c3aed);
-  color: var(--text);
-  font-weight: 800;
+  height: 35px;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .site-footer__wordmark {

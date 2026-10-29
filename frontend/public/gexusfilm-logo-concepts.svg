@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none">
+  <defs>
+    <linearGradient id="hex" x1="310" y1="180" x2="850" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20D9F2"/>
+      <stop offset=".52" stop-color="#168BFF"/>
+      <stop offset="1" stop-color="#3D46F5"/>
+    </linearGradient>
+    <linearGradient id="gecko" x1="400" y1="230" x2="780" y2="680" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#26E6E8"/>
+      <stop offset=".48" stop-color="#08BDF3"/>
+      <stop offset="1" stop-color="#1765F8"/>
+    </linearGradient>
+    <linearGradient id="word" x1="270" y1="760" x2="850" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#28D8EF"/>
+      <stop offset="1" stop-color="#2585FF"/>
+    </linearGradient>
+    <filter id="glow" x="180" y="90" width="840" height="720" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+    <g id="symbol">
+      <!-- soft ambient glow, intentionally subtle -->
+      <path d="M600 128 855 275v294L600 716 345 569V275z" stroke="#087CFF" stroke-width="25" opacity=".22" filter="url(#glow)"/>
+
+      <!-- open-corner hexagon: distinctive silhouette with breathing room -->
+      <path d="M584 125c10-6 22-6 32 0l242 140c10 6 16 16 16 28v75m0 69v132c0 12-6 22-16 28L616 737c-10 6-22 6-32 0L342 597c-10-6-16-16-16-28V303c0-12 6-22 16-28z" stroke="url(#hex)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- gecko body and head -->
+      <path d="M477 531c18-78 65-130 130-165 39-21 72-47 102-91 22-32 48-56 83-71 31-13 67-17 104-8-5 43-22 82-49 112-30 34-66 52-111 58-35 5-59 15-79 37-25 29-39 66-53 108-14 43-30 82-57 111-20 22-46 37-80 43 11-34 20-67 10-94Z" fill="url(#gecko)"/>
+
+      <!-- gecko eye: simple and legible -->
+      <ellipse cx="839" cy="242" rx="18" ry="27" transform="rotate(20 839 242)" fill="#06152B"/>
+      <ellipse cx="844" cy="234" rx="6" ry="9" transform="rotate(20 844 234)" fill="#F8FAFC"/>
+
+      <!-- forelegs with rounded gecko toe pads -->
+      <path d="M632 383c-32 9-63 5-90-13-24-16-35-39-39-65m-1 0-23-19m24 19-1-31m1 31 23-21m-113 236c-28 9-49 5-66-10-14-13-19-31-15-51m1 0-24-19m24 19-2-30m2 30 21-20" stroke="url(#gecko)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="#20D9F2">
+        <circle cx="479" cy="305" r="11"/><circle cx="455" cy="286" r="10"/><circle cx="502" cy="274" r="10"/><circle cx="525" cy="306" r="10"/>
+        <circle cx="317" cy="480" r="11"/><circle cx="291" cy="460" r="10"/><circle cx="341" cy="450" r="10"/><circle cx="363" cy="481" r="10"/>
+      </g>
+
+      <!-- rear leg and pads -->
+      <path d="M564 586c-30 33-36 68-16 97 16 23 43 31 75 23m0 0 19 25m-19-25 29-1m-29 1 12-27" stroke="url(#gecko)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="#168BFF"><circle cx="642" cy="706" r="11"/><circle cx="661" cy="731" r="10"/><circle cx="690" cy="704" r="10"/><circle cx="648" cy="677" r="10"/></g>
+
+      <!-- tail becomes a short film strip; generous perforations survive reduction -->
+      <path d="M491 525c-98 37-166 89-179 155-10 51 20 88 77 106 74 23 170 2 244-42" stroke="url(#gecko)" stroke-width="37" stroke-linecap="round"/>
+      <path d="M449 544c-64 33-104 72-113 113-8 37 14 65 55 79 61 21 145 7 210-30" stroke="#06152B" stroke-width="13" stroke-linecap="round" stroke-dasharray="2 28"/>
+    </g>
+  </defs>
+
+  <rect width="1200" height="900" rx="24" fill="#020817"/>
+  <text x="600" y="62" text-anchor="middle" fill="#94A3B8" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="3">GEXUSFILM  /  ОБНОВЛЁННЫЙ КОНЦЕПТ</text>
+
+  <!-- large mark -->
+  <use href="#symbol"/>
+
+  <!-- wordmark -->
+  <text x="600" y="817" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="83" font-weight="800" letter-spacing="-3">
+    <tspan fill="#F8FAFC">Gexus</tspan><tspan fill="url(#word)">Film</tspan>
+  </text>
+  <text x="600" y="858" text-anchor="middle" fill="#64748B" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="2">ГЕККОН · ГЕКСАГОН · КИНОПЛЁНКА</text>
+</svg>

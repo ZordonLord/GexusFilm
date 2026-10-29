@@ -74,9 +74,7 @@ export default function Header() {
           </svg>
         </button>
         <Link to="/" className="site-header__logo">
-          <div className="site-header__logo-mark">
-            <span>G</span>
-          </div>
+          <img className="site-header__logo-mark" src="/logo.png" alt="" />
           <span className="site-header__logo-text">
             Gexus<span>Film</span>
           </span>

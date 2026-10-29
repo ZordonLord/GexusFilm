@@ -94,15 +94,10 @@
 }
 
 .site-header__logo-mark {
-  display: grid;
   width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--primary), #7c3aed);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 800;
+  height: 35px;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .site-header__logo-text {

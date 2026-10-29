@@ -10,9 +10,7 @@ export default function Footer() {
       <div className="site-footer__inner">
         {/* Левая часть — логотип */}
         <div className="site-footer__brand">
-          <div className="site-footer__logo">
-            <span>G</span>
-          </div>
+          <img className="site-footer__logo" src="/logo.png" alt="" />
           <span className="site-footer__wordmark">
             Gexus<span>Film</span>
           </span>
