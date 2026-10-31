@@ -13,7 +13,11 @@ final class CacheKeyFactory
 
     public static function details(string $mediaType, int $id): string
     {
-        return "cache:details:$mediaType:$id";
+        if ($mediaType !== 'movie') {
+            return "cache:details:$mediaType:$id";
+        }
+
+        return "cache:details:v2:$mediaType:$id";
     }
 
     public static function season(int $seriesId, int $seasonNumber): string

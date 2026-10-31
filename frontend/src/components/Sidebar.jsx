@@ -41,7 +41,7 @@ export default function Sidebar() {
         className={`app-sidebar ${sidebarState}`}
         aria-label="Основная навигация"
         aria-hidden={isMobile && !isOpen}
-        inert={isMobile && !isOpen ? "" : undefined}
+        inert={isMobile && !isOpen}
       >
       {/* Navigation */}
       <nav className="app-sidebar__nav">

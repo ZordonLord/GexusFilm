@@ -10,6 +10,7 @@ import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import MediaHero from "../components/MediaHero";
+import MovieDetailsSections from "../components/MovieDetailsSections";
 import SeasonList from "../components/SeasonList";
 
 import "../styles/MediaPage.css";
@@ -87,6 +88,8 @@ export default function MediaPage() {
             } : undefined}
           >
             <MediaHero media={media} type={type} />
+
+            {type === "movie" && <MovieDetailsSections media={media} />}
 
             {type === "tv" && (
               <SeasonList

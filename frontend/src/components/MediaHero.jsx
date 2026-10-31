@@ -37,6 +37,28 @@ function Icon({ name }) {
   );
 }
 
+function formatReleaseDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const date = new Date(`${value}T00:00:00Z`);
+  return new Intl.DateTimeFormat("ru-RU", { dateStyle: "long", timeZone: "UTC" }).format(date);
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    Rumored: "Анонсирован",
+    Planned: "Запланирован",
+    "In Production": "В производстве",
+    "Post Production": "Постпродакшн",
+    Released: "Вышел",
+    Canceled: "Отменён",
+  };
+
+  return labels[status] || status;
+}
+
 export default function MediaHero({ media, type = "movie" }) {
   const [posterFailed, setPosterFailed] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
@@ -54,6 +76,10 @@ export default function MediaHero({ media, type = "movie" }) {
   const hasRating = rating !== "—";
   const hasYear = year !== "—";
   const overview = media.overview?.trim();
+  const originalTitle = media.original_title?.trim();
+  const tagline = media.tagline?.trim();
+  const releaseDate = formatReleaseDate(media.release_date);
+  const status = media.status?.trim() ? getStatusLabel(media.status.trim()) : null;
 
   async function shareMedia() {
     const shareData = {
@@ -102,11 +128,31 @@ export default function MediaHero({ media, type = "movie" }) {
         <p className="media-hero__eyebrow">{mediaTypeLabel}</p>
         <h1 className="media-hero__title" id="media-title">{title}</h1>
 
+        {type !== "movie" && tagline && <p className="media-hero__tagline">{tagline}</p>}
+
+        {originalTitle && originalTitle !== title && (
+          <p className="media-hero__original-title">
+            <span>Оригинальное название</span>
+            <strong>{originalTitle}</strong>
+          </p>
+        )}
+
         <ul className="media-hero__meta" aria-label="Информация о медиа">
           {hasYear && (
             <li className="media-badge">
               <Icon name="calendar" />
               <span>{year}</span>
+            </li>
+          )}
+          {releaseDate && (
+            <li className="media-badge">
+              <Icon name="calendar" />
+              <span>Премьера: {releaseDate}</span>
+            </li>
+          )}
+          {status && (
+            <li className="media-badge media-badge--status">
+              <span>{status}</span>
             </li>
           )}
           {hasRating && (

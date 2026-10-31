@@ -49,6 +49,9 @@ final class StubContentSource implements ContentSourceInterface
     /** @var array<int, array<string, mixed>> */
     public array $searchPeopleResponses = [];
 
+    /** @var list<int> */
+    public array $movieDetailsRequests = [];
+
     // ── Movies ──────────────────────────────────────────────
 
     public function getPopularMovies(): array
@@ -103,11 +106,19 @@ final class StubContentSource implements ContentSourceInterface
 
     public function getMovie(int $id): array
     {
+        $this->movieDetailsRequests[] = $id;
+
         return [
             'id' => $id,
             'title' => 'Movie ' . $id,
             'genres' => [['id' => 28, 'name' => 'Action']],
             'runtime' => 120,
+            'credits' => ['cast' => [], 'crew' => []],
+            'videos' => ['results' => []],
+            'images' => ['backdrops' => [], 'posters' => [], 'logos' => []],
+            'recommendations' => ['results' => []],
+            'release_dates' => ['results' => []],
+            'watch/providers' => ['results' => []],
         ];
     }
 

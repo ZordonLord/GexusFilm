@@ -10,6 +10,10 @@ use DateTimeImmutable;
 
 class MovieService
 {
+    private const EXPANDED_DETAIL_SECTIONS = [
+        'credits', 'videos', 'images', 'recommendations', 'release_dates', 'watch/providers',
+    ];
+
     public function __construct(
         private ContentSourceInterface $contentSource,
         private ?MovieRepository $repository,
@@ -138,13 +142,13 @@ class MovieService
     {
         $cacheKey = CacheKeyFactory::details('movie', $id);
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null && $this->hasExpandedDetails($cached)) {
             return $cached;
         }
 
         if ($this->repository) {
             $cached = $this->repository->getMovieDetails($id);
-            if ($cached) {
+            if ($cached && $this->hasExpandedDetails($cached)) {
                 return $cached;
             }
         }
@@ -155,6 +159,18 @@ class MovieService
         $this->saveCached($cacheKey, $movie);
 
         return $movie;
+    }
+
+    /** Проверяет, что снимок содержит все секции расширенной страницы фильма. */
+    private function hasExpandedDetails(array $movie): bool
+    {
+        foreach (self::EXPANDED_DETAIL_SECTIONS as $section) {
+            if (!isset($movie[$section]) || !is_array($movie[$section])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function searchMovies(string $query): array
