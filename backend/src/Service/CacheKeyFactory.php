@@ -17,7 +17,12 @@ final class CacheKeyFactory
             return "cache:details:$mediaType:$id";
         }
 
-        return "cache:details:v2:$mediaType:$id";
+        return "cache:details:v3:$mediaType:$id";
+    }
+
+    public static function movieCollection(int $id): string
+    {
+        return "cache:collection:movie:$id";
     }
 
     public static function season(int $seriesId, int $seasonNumber): string

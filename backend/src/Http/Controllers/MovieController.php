@@ -57,6 +57,15 @@ class MovieController
         return $this->movieService->getMovieDetails($id);
     }
 
+    public function getMovieCollection(int $id): array
+    {
+        if ($id <= 0) {
+            throw new \InvalidArgumentException('Collection ID must be positive');
+        }
+
+        return $this->movieService->getMovieCollection($id);
+    }
+
     public function search(string $query): array
     {
         $query = trim($query);

@@ -64,6 +64,11 @@ final class ProtectedContentSource implements ContentSourceInterface
         return $this->run(__FUNCTION__, [$id], fn (): array => $this->source->getMovie($id));
     }
 
+    public function getMovieCollection(int $id): array
+    {
+        return $this->run(__FUNCTION__, [$id], fn (): array => $this->source->getMovieCollection($id));
+    }
+
     public function search(string $query, array $params = []): array
     {
         return $this->run(__FUNCTION__, [$query, $params], fn (): array => $this->source->search($query, $params));

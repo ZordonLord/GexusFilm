@@ -1,5 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getMediaId, getMediaTitle } from "../utils/media";
+import { getFranchiseParts } from "../utils/movieCollection";
+import { getTmdbWatchLink } from "../utils/tmdbWatchLink";
 import { getTmdbImageUrl } from "../utils/tmdbImage";
 import MediaCard from "./MediaCard";
 
@@ -13,11 +15,56 @@ const PROVIDER_TYPE_LABELS = {
   buy: "Покупка",
 };
 
-function Section({ title, children, className = "" }) {
+function Section({ title, children, className = "", id, collapsible = false }) {
+  const [isDesktop, setIsDesktop] = useState(() => (
+    typeof window !== "undefined" && window.matchMedia("(min-width: 761px)").matches
+  ));
+  const [isExpanded, setIsExpanded] = useState(() => (
+    collapsible && typeof window !== "undefined" && window.matchMedia("(min-width: 761px)").matches
+  ));
+  const contentId = `${id || title.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, "-")}-content`;
+
+  function toggleDisclosure() {
+    if (!collapsible) return;
+    setIsExpanded((expanded) => (window.matchMedia("(max-width: 760px)").matches ? !expanded : true));
+  }
+
+  useEffect(() => {
+    if (!collapsible) return undefined;
+
+    const desktopQuery = window.matchMedia("(min-width: 761px)");
+    const updateExpanded = (event) => {
+      setIsDesktop(event.matches);
+      setIsExpanded(event.matches);
+    };
+
+    desktopQuery.addEventListener("change", updateExpanded);
+    return () => desktopQuery.removeEventListener("change", updateExpanded);
+  }, [collapsible]);
+
   return (
-    <section className={`movie-details__section ${className}`.trim()} aria-label={title}>
-      <h2 className="movie-details__title">{title}</h2>
-      {children}
+    <section id={id} className={`movie-details__section ${className}`.trim()} aria-label={title}>
+      {collapsible && !isDesktop ? (
+        <h2 className="movie-details__title">
+          <button
+            className="movie-details__disclosure-trigger"
+            type="button"
+            aria-expanded={isExpanded}
+            aria-controls={contentId}
+            onClick={toggleDisclosure}
+          >
+            <span>{title}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </h2>
+      ) : (
+        <h2 className="movie-details__title">{title}</h2>
+      )}
+      <div id={collapsible ? contentId : undefined} className="movie-details__section-content" hidden={collapsible && !isDesktop && !isExpanded}>
+        {children}
+      </div>
     </section>
   );
 }
@@ -58,17 +105,51 @@ function PersonPortrait({ person, role }) {
   );
 }
 
+function ScrollControls({ targetRef, label }) {
+  function scroll(direction) {
+    const element = targetRef.current;
+    if (!element) return;
+
+    element.scrollBy({
+      left: direction * Math.max(element.clientWidth * 0.8, 240),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }
+
+  return (
+    <div className="movie-details__scroll-controls" aria-label={label}>
+      <button type="button" aria-label={`Прокрутить: ${label} назад`} onClick={() => scroll(-1)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      <button type="button" aria-label={`Прокрутить: ${label} вперёд`} onClick={() => scroll(1)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 function CastSection({ credits }) {
   const cast = Array.isArray(credits?.cast) ? credits.cast.slice(0, 12) : [];
+  const castRef = useRef(null);
   if (cast.length === 0) return null;
 
   return (
-    <Section title="Актёры" className="movie-details__section--cast">
-      <ul className="movie-details__people">
-        {cast.map((person) => (
-          <PersonPortrait key={person.credit_id || person.id} person={person} role={person.character} />
-        ))}
-      </ul>
+    <Section title="Актёры" className="movie-details__section--cast" collapsible>
+      <div className="movie-details__scroll-header">
+        <p className="movie-details__scroll-hint">Основной состав</p>
+        <ScrollControls targetRef={castRef} label="Актёры" />
+      </div>
+      <div className="movie-details__people-viewport" ref={castRef} tabIndex="0" aria-label="Актёры фильма">
+        <ul className="movie-details__people">
+          {cast.map((person) => (
+            <PersonPortrait key={person.credit_id || person.id} person={person} role={person.character} />
+          ))}
+        </ul>
+      </div>
     </Section>
   );
 }
@@ -98,8 +179,8 @@ function CrewSection({ credits }) {
   if (selected.length === 0) return null;
 
   return (
-    <Section title="Съёмочная группа">
-      <ul className="movie-details__crew">
+    <Section title="Съёмочная группа" className="movie-details__section--crew" collapsible>
+      <ul className="movie-details__crew movie-details__crew--editorial">
         {selected.map((person) => (
           <li key={person.credit_id || `${person.id}-${person.job}`}>
             <strong>{person.name}</strong>
@@ -262,8 +343,24 @@ function ProviderList({ groups, regionName, link }) {
                   const logo = getTmdbImageUrl(provider.logo_path, "w92");
                   return (
                     <li key={`${group.key}-${provider.provider_id}`}>
-                      {logo && <img src={logo} alt="" width="36" height="36" loading="lazy" />}
-                      <span>{provider.provider_name}</span>
+                      {link ? (
+                        <a
+                          className="movie-details__provider-link"
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`${provider.provider_name} — открыть страницу фильма в TMDB`}
+                        >
+                          {logo && <img src={logo} alt="" width="36" height="36" loading="lazy" />}
+                          <span>{provider.provider_name}</span>
+                          <span className="movie-details__provider-external" aria-hidden="true">↗</span>
+                        </a>
+                      ) : (
+                        <>
+                          {logo && <img src={logo} alt="" width="36" height="36" loading="lazy" />}
+                          <span>{provider.provider_name}</span>
+                        </>
+                      )}
                     </li>
                   );
                 })}
@@ -286,10 +383,7 @@ function WatchSection({ media }) {
   const watchProviders = media["watch/providers"];
   const russianRegion = watchProviders?.results?.RU;
   const russianGroups = getProviderGroups(russianRegion);
-  const russianLink = typeof russianRegion?.link === "string"
-    && /^https:\/\/www\.themoviedb\.org\//.test(russianRegion.link)
-    ? russianRegion.link
-    : null;
+  const russianLink = getTmdbWatchLink(russianRegion?.link);
   const productionCountries = Array.isArray(media.production_countries)
     ? media.production_countries
     : [];
@@ -297,10 +391,7 @@ function WatchSection({ media }) {
     .map((country) => ({ ...country, providers: watchProviders?.results?.[country.iso_3166_1] }))
     .find((country) => country.providers);
   const originalGroups = getProviderGroups(originalRegion?.providers);
-  const originalLink = typeof originalRegion?.providers?.link === "string"
-    && /^https:\/\/www\.themoviedb\.org\//.test(originalRegion.providers.link)
-    ? originalRegion.providers.link
-    : null;
+  const originalLink = getTmdbWatchLink(originalRegion?.providers?.link);
 
   function handleTabKeyDown(event) {
     const tabButtons = Array.from(event.currentTarget.querySelectorAll('[role="tab"]'));
@@ -320,7 +411,7 @@ function WatchSection({ media }) {
   }
 
   return (
-    <Section title="Смотреть" className="movie-details__section--watch">
+    <Section title="Смотреть" className="movie-details__section--watch" id="watch-section">
       <div className="movie-details__watch-panel">
         <div className="movie-details__tabs" role="tablist" aria-label="Источники просмотра" onKeyDown={handleTabKeyDown}>
           <button
@@ -372,24 +463,53 @@ function WatchSection({ media }) {
   );
 }
 
-function RecommendationsSection({ recommendations }) {
-  const items = (Array.isArray(recommendations?.results) ? recommendations.results : [])
-    .filter((item) => getMediaId(item))
-    .slice(0, 8);
-  if (items.length === 0) return null;
+function FranchiseSection({ media, collection }) {
+  const parts = getFranchiseParts(collection, getMediaId(media));
+  const partsRef = useRef(null);
+  if (parts.length === 0) return null;
 
   return (
-    <Section title="Рекомендации" className="movie-details__section--recommendations">
-      <div className="movie-details__recommendations">
-        {items.map((item) => (
-          <MediaCard key={getMediaId(item)} item={item} mediaType="movie" compact />
-        ))}
+    <Section title="Части франшизы" className="movie-details__section--franchise">
+      <div className="movie-details__scroll-header">
+        <p className="movie-details__scroll-hint">{collection.name || "Другие фильмы коллекции"}</p>
+        <ScrollControls targetRef={partsRef} label="Части франшизы" />
+      </div>
+      <div className="movie-details__recommendations-viewport" ref={partsRef} tabIndex="0" aria-label="Фильмы этой франшизы">
+        <div className="movie-details__recommendations">
+          {parts.map((part) => (
+            <MediaCard key={getMediaId(part)} item={part} mediaType="movie" compact />
+          ))}
+        </div>
       </div>
     </Section>
   );
 }
 
-export default function MovieDetailsSections({ media }) {
+function RecommendationsSection({ recommendations }) {
+  const items = (Array.isArray(recommendations?.results) ? recommendations.results : [])
+    .filter((item) => getMediaId(item))
+    .slice(0, 8);
+  const recommendationsRef = useRef(null);
+  if (items.length === 0) return null;
+
+  return (
+    <Section title="Рекомендации" className="movie-details__section--recommendations">
+      <div className="movie-details__scroll-header">
+        <p className="movie-details__scroll-hint">Ещё фильмы для просмотра</p>
+        <ScrollControls targetRef={recommendationsRef} label="Рекомендации" />
+      </div>
+      <div className="movie-details__recommendations-viewport" ref={recommendationsRef} tabIndex="0" aria-label="Рекомендованные фильмы">
+        <div className="movie-details__recommendations">
+          {items.map((item) => (
+            <MediaCard key={getMediaId(item)} item={item} mediaType="movie" compact />
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+export default function MovieDetailsSections({ media, collection }) {
   const hasTrailer = Boolean(getTrailer(media.videos));
   const hasBackdrops = Array.isArray(media.images?.backdrops) && media.images.backdrops.length > 0;
 
@@ -404,6 +524,7 @@ export default function MovieDetailsSections({ media }) {
         </div>
       )}
       <WatchSection media={media} />
+      <FranchiseSection media={media} collection={collection} />
       <RecommendationsSection recommendations={media.recommendations} />
     </div>
   );

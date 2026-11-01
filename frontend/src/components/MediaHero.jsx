@@ -1,6 +1,6 @@
 // Универсальный hero-блок медиа (фильм / сериал)
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -11,6 +11,7 @@ import {
   formatRating,
 } from "../utils/media";
 import { getTmdbImageUrl } from "../utils/tmdbImage";
+import { getEnglishAlternativeTitle } from "../utils/englishTitle";
 
 import "../styles/MediaHero.css";
 
@@ -20,6 +21,7 @@ function Icon({ name }) {
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 11h18" /></>,
     clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
     catalog: <><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" /></>,
+    play: <path d="m8 5 11 7-11 7V5Z" />,
     arrow: <><path d="M7 17 17 7M8 7h9v9" /></>,
     image: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></>,
   };
@@ -28,7 +30,7 @@ function Icon({ name }) {
     <svg
       className="media-hero__icon"
       viewBox="0 0 24 24"
-      fill={name === "star" ? "currentColor" : "none"}
+      fill={name === "star" || name === "play" ? "currentColor" : "none"}
       aria-hidden="true"
       focusable="false"
     >
@@ -62,6 +64,9 @@ function getStatusLabel(status) {
 export default function MediaHero({ media, type = "movie" }) {
   const [posterFailed, setPosterFailed] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
+  const [overviewExpanded, setOverviewExpanded] = useState(false);
+  const [overviewNeedsToggle, setOverviewNeedsToggle] = useState(false);
+  const overviewRef = useRef(null);
 
   const poster = posterFailed
     ? null
@@ -77,9 +82,54 @@ export default function MediaHero({ media, type = "movie" }) {
   const hasYear = year !== "—";
   const overview = media.overview?.trim();
   const originalTitle = media.original_title?.trim();
+  const englishTitle = getEnglishAlternativeTitle(media.alternative_titles, media.translations, originalTitle);
   const tagline = media.tagline?.trim();
   const releaseDate = formatReleaseDate(media.release_date);
   const status = media.status?.trim() ? getStatusLabel(media.status.trim()) : null;
+
+  useEffect(() => {
+    const element = overviewRef.current;
+    if (!element) return undefined;
+
+    const measureOverflow = () => {
+      const fullText = element.cloneNode(true);
+      fullText.removeAttribute("id");
+      fullText.classList.add("media-hero__overview--expanded");
+      Object.assign(fullText.style, {
+        position: "fixed",
+        inset: "0 auto auto -10000px",
+        width: `${element.getBoundingClientRect().width}px`,
+        height: "auto",
+        maxHeight: "none",
+        overflow: "visible",
+        visibility: "hidden",
+        pointerEvents: "none",
+      });
+      document.body.append(fullText);
+
+      const fullHeight = fullText.getBoundingClientRect().height;
+      const styles = getComputedStyle(element);
+      const lineHeight = Number.parseFloat(styles.lineHeight);
+      const lineClamp = Number.parseInt(styles.webkitLineClamp, 10);
+      const isClamped = Number.isFinite(lineHeight) && Number.isFinite(lineClamp) && lineClamp > 0;
+      const needsToggle = isClamped
+        ? fullHeight > (lineHeight * lineClamp) + 1
+        : fullHeight > element.clientHeight + 1;
+
+      fullText.remove();
+      setOverviewNeedsToggle(needsToggle);
+    };
+
+    measureOverflow();
+    const resizeObserver = new ResizeObserver(measureOverflow);
+    resizeObserver.observe(element);
+    window.addEventListener("resize", measureOverflow);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measureOverflow);
+    };
+  }, [overview]);
 
   async function shareMedia() {
     const shareData = {
@@ -130,12 +180,22 @@ export default function MediaHero({ media, type = "movie" }) {
 
         {type !== "movie" && tagline && <p className="media-hero__tagline">{tagline}</p>}
 
-        {originalTitle && originalTitle !== title && (
-          <p className="media-hero__original-title">
-            <span>Оригинальное название</span>
-            <strong>{originalTitle}</strong>
-          </p>
-        )}
+        {(originalTitle && originalTitle !== title) || (englishTitle && englishTitle !== title) ? (
+          <div className="media-hero__titles">
+            {originalTitle && originalTitle !== title && (
+              <p className="media-hero__original-title">
+                <span>Оригинальное название</span>
+                <strong>{originalTitle}</strong>
+              </p>
+            )}
+            {englishTitle && englishTitle !== originalTitle && englishTitle !== title && (
+              <p className="media-hero__english-title">
+                <span>Английское название</span>
+                <strong>{englishTitle}</strong>
+              </p>
+            )}
+          </div>
+        ) : null}
 
         <ul className="media-hero__meta" aria-label="Информация о медиа">
           {hasYear && (
@@ -186,21 +246,45 @@ export default function MediaHero({ media, type = "movie" }) {
         )}
 
         <div className="media-hero__summary">
-          <h2 className="media-hero__section-title">Кратко</h2>
+          <h2 className="media-hero__section-title">Описание</h2>
           {overview ? (
-            <p className="media-hero__overview">{overview}</p>
+            <p
+              ref={overviewRef}
+              className={`media-hero__overview${overviewExpanded ? " media-hero__overview--expanded" : ""}`}
+              id="media-overview"
+            >
+              {overview}
+            </p>
           ) : (
             <p className="media-hero__overview media-hero__overview--muted">
               Описание пока недоступно.
             </p>
           )}
+          {overview && overviewNeedsToggle && (
+            <button
+              className="media-hero__overview-toggle"
+              type="button"
+              aria-expanded={overviewExpanded}
+              aria-controls="media-overview"
+              onClick={() => setOverviewExpanded((expanded) => !expanded)}
+            >
+              {overviewExpanded ? "Свернуть" : "Читать полностью"}
+            </button>
+          )}
         </div>
 
         <div className="media-hero__actions">
-          <Link className="media-hero__button media-hero__button--primary" to="/discover">
-            <Icon name="catalog" />
-            <span>Перейти в каталог</span>
-          </Link>
+          {type === "movie" ? (
+            <a className="media-hero__button media-hero__button--primary" href="#watch-section">
+              <Icon name="play" />
+              <span>Где смотреть</span>
+            </a>
+          ) : (
+            <Link className="media-hero__button media-hero__button--primary" to="/discover">
+              <Icon name="catalog" />
+              <span>Перейти в каталог</span>
+            </Link>
+          )}
           <button
             className="media-hero__button media-hero__button--secondary"
             type="button"
@@ -209,6 +293,11 @@ export default function MediaHero({ media, type = "movie" }) {
             <Icon name="arrow" />
             <span>Поделиться</span>
           </button>
+          {type === "movie" && (
+            <Link className="media-hero__catalog-link" to="/discover">
+              Вернуться в каталог
+            </Link>
+          )}
         </div>
         <p className="media-hero__share-status" role="status" aria-live="polite">
           {shareMessage}

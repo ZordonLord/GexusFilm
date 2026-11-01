@@ -52,6 +52,9 @@ final class StubContentSource implements ContentSourceInterface
     /** @var list<int> */
     public array $movieDetailsRequests = [];
 
+    /** @var list<int> */
+    public array $movieCollectionRequests = [];
+
     // ── Movies ──────────────────────────────────────────────
 
     public function getPopularMovies(): array
@@ -119,6 +122,26 @@ final class StubContentSource implements ContentSourceInterface
             'recommendations' => ['results' => []],
             'release_dates' => ['results' => []],
             'watch/providers' => ['results' => []],
+            'alternative_titles' => ['titles' => [
+                ['iso_3166_1' => 'US', 'title' => 'Movie ' . $id . ' English Title'],
+            ]],
+            'translations' => ['translations' => [
+                ['iso_639_1' => 'en', 'data' => ['title' => 'Movie ' . $id . ' English Translation']],
+            ]],
+        ];
+    }
+
+    public function getMovieCollection(int $id): array
+    {
+        $this->movieCollectionRequests[] = $id;
+
+        return [
+            'id' => $id,
+            'name' => 'Collection ' . $id,
+            'parts' => [
+                ['id' => 42, 'title' => 'Movie 42'],
+                ['id' => 43, 'title' => 'Movie 43'],
+            ],
         ];
     }
 

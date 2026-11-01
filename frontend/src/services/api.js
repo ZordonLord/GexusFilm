@@ -40,6 +40,9 @@ export const getUpcomingMovies = () =>
 export const getMovie = (id) =>
   request(`/movies/${id}`);
 
+export const getMovieCollection = (id) =>
+  request(`/movie-collections/${id}`);
+
 export const getDiscoverMovies = (params = {}) =>
   request("/discover", { ...params, type: "movie" });
 

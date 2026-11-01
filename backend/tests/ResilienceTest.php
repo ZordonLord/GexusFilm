@@ -85,6 +85,7 @@ final class ResilienceTest extends TestCase
 
         self::assertSame(42, $protected->getMovie(42)['id']);
         self::assertSame(42, $protected->getMovie(42)['id']);
+        self::assertSame(900, $protected->getMovieCollection(900)['id']);
         $this->removeDirectory($directory);
     }
 

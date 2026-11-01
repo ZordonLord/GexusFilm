@@ -76,6 +76,32 @@ final class MovieServiceTest extends TestCase
         self::assertSame(120, $movie['runtime']);
         self::assertArrayHasKey('credits', $movie);
         self::assertArrayHasKey('watch/providers', $movie);
+        self::assertSame('Movie 42 English Title', $movie['alternative_titles']['titles'][0]['title']);
+        self::assertSame('Movie 42 English Translation', $movie['translations']['translations'][0]['data']['title']);
+    }
+
+    public function testGetMovieCollectionReturnsCollectionPartsFromSource(): void
+    {
+        $collection = $this->service->getMovieCollection(900);
+
+        self::assertSame(900, $collection['id']);
+        self::assertCount(2, $collection['parts']);
+        self::assertSame(43, $collection['parts'][1]['id']);
+    }
+
+    public function testGetMovieCollectionUsesCachedResponse(): void
+    {
+        $collection = ['id' => 900, 'name' => 'Cached collection', 'parts' => []];
+        $repository = $this->createMock(\App\Repository\MovieRepository::class);
+        $repository->expects(self::once())
+            ->method('getCachedResponse')
+            ->with('cache:collection:movie:900')
+            ->willReturn($collection);
+        $repository->expects(self::never())->method('saveCachedResponse');
+        $source = new StubContentSource();
+        $service = new MovieService($source, $repository);
+
+        self::assertSame($collection, $service->getMovieCollection(900));
     }
 
     public function testGetMovieDetailsRefreshesCachedPayloadWithoutExpandedSections(): void
@@ -109,6 +135,8 @@ final class MovieServiceTest extends TestCase
             'recommendations' => ['results' => []],
             'release_dates' => ['results' => []],
             'watch/providers' => ['results' => []],
+            'alternative_titles' => ['titles' => []],
+            'translations' => ['translations' => []],
         ];
         $repository = $this->createMock(\App\Repository\MovieRepository::class);
         $repository->method('getCachedResponse')->willReturn($movie);

@@ -73,6 +73,11 @@ function createRouter(): Router
         json_response($data);
     });
 
+    $router->get('/api/movie-collections/{id}', static function (array $params) use ($movieController): void {
+        $id = (int) ($params['id'] ?? 0);
+        json_response($movieController->getMovieCollection($id));
+    });
+
     // Детали фильма по ID
     $router->get('/api/movies/{id}', static function (array $params) use ($movieController): void {
         $id = (int) ($params['id'] ?? 0);

@@ -11,7 +11,7 @@ use DateTimeImmutable;
 class MovieService
 {
     private const EXPANDED_DETAIL_SECTIONS = [
-        'credits', 'videos', 'images', 'recommendations', 'release_dates', 'watch/providers',
+        'credits', 'videos', 'images', 'recommendations', 'release_dates', 'watch/providers', 'alternative_titles', 'translations',
     ];
 
     public function __construct(
@@ -159,6 +159,21 @@ class MovieService
         $this->saveCached($cacheKey, $movie);
 
         return $movie;
+    }
+
+    /** Получает кэшированные детали коллекции фильмов. */
+    public function getMovieCollection(int $id): array
+    {
+        $cacheKey = CacheKeyFactory::movieCollection($id);
+
+        if (($cached = $this->getCached($cacheKey)) !== null) {
+            return $cached;
+        }
+
+        $collection = $this->contentSource->getMovieCollection($id);
+        $this->saveCached($cacheKey, $collection);
+
+        return $collection;
     }
 
     /** Проверяет, что снимок содержит все секции расширенной страницы фильма. */

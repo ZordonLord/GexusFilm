@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { getMovie, getTvShow } from "../services/api";
+import { getMovie, getMovieCollection, getTvShow } from "../services/api";
 import { getTmdbImageUrl } from "../utils/tmdbImage";
 
 import Header from "../components/Header";
@@ -24,25 +24,46 @@ export default function MediaPage() {
   const { type, id } = useParams();
 
   const [media, setMedia] = useState(null);
+  const [collection, setCollection] = useState(null);
   const [loading, setLoading] = useState(true);
   const backdropUrl = getTmdbImageUrl(media?.backdrop_path, "original");
 
   useEffect(() => {
+    let active = true;
+
     async function loadMedia() {
       setLoading(true);
+      setCollection(null);
 
       try {
         const fetchMedia = API_BY_TYPE[type] || getMovie;
         const data = await fetchMedia(id);
+        if (!active) return;
         setMedia(data);
+
+        if (type === "movie" && data.belongs_to_collection?.id) {
+          getMovieCollection(data.belongs_to_collection.id)
+            .then((collectionData) => {
+              if (active) setCollection(collectionData);
+            })
+            .catch((error) => {
+              if (active) console.error("Не удалось загрузить части франшизы:", error);
+            });
+        } else {
+          setCollection(null);
+        }
       } catch (error) {
-        console.error(error);
+        if (active) console.error(error);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     loadMedia();
+
+    return () => {
+      active = false;
+    };
   }, [type, id]);
 
   if (loading) {
@@ -89,7 +110,7 @@ export default function MediaPage() {
           >
             <MediaHero media={media} type={type} />
 
-            {type === "movie" && <MovieDetailsSections media={media} />}
+            {type === "movie" && <MovieDetailsSections media={media} collection={collection} />}
 
             {type === "tv" && (
               <SeasonList

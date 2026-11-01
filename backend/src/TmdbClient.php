@@ -130,9 +130,14 @@ class TmdbClient implements ContentSourceInterface
     public function getMovie(int $id): array
     {
         return $this->request("/movie/$id", [
-            'append_to_response' => 'credits,videos,images,recommendations,release_dates,watch/providers',
+            'append_to_response' => 'credits,videos,images,recommendations,release_dates,watch/providers,alternative_titles,translations',
             'include_image_language' => 'ru,en,null',
         ]);
+    }
+
+    public function getMovieCollection(int $id): array
+    {
+        return $this->request("/collection/$id");
     }
 
     public function search(string $query, array $params = []): array

@@ -60,6 +60,11 @@ interface ContentSourceInterface
     public function getMovie(int $id): array;
 
     /**
+     * Детали коллекции фильмов по её ID.
+     */
+    public function getMovieCollection(int $id): array;
+
+    /**
      * Поиск фильмов по текстовому запросу.
      */
     public function search(string $query, array $params = []): array;
