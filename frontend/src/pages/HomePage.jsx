@@ -154,9 +154,7 @@ export default function HomePage() {
                 loading={loading}
                 compact
                 showOverlayControls={false}
-                titleHref="/movies"
-                viewAllHref="/movies"
-                viewAllLabel="Все фильмы"
+                titleHref="/movies?sort_by=popularity.desc"
               />
 
               <MediaRow
@@ -166,9 +164,7 @@ export default function HomePage() {
                 loading={loading}
                 compact
                 showOverlayControls={false}
-                titleHref="/tv"
-                viewAllHref="/tv"
-                viewAllLabel="Все сериалы"
+                titleHref="/tv?sort_by=popularity.desc"
               />
 
               <MediaRow
@@ -178,9 +174,7 @@ export default function HomePage() {
                 loading={loading}
                 compact
                 showOverlayControls={false}
-                titleHref="/movies"
-                viewAllHref="/movies"
-                viewAllLabel="Все фильмы"
+                titleHref="/movies?sort_by=year.desc"
               />
 
               <MediaRow
@@ -190,9 +184,7 @@ export default function HomePage() {
                 loading={loading}
                 compact
                 showOverlayControls={false}
-                titleHref="/tv"
-                viewAllHref="/tv"
-                viewAllLabel="Все сериалы"
+                titleHref="/tv?sort_by=year.desc"
               />
 
               <MediaRow
@@ -203,8 +195,6 @@ export default function HomePage() {
                 compact
                 showOverlayControls={false}
                 titleHref="/discover?type=movie"
-                viewAllHref="/discover?type=movie"
-                viewAllLabel="Открыть каталог"
               />
 
               <MediaRow
@@ -215,8 +205,6 @@ export default function HomePage() {
                 compact
                 showOverlayControls={false}
                 titleHref="/discover?type=tv"
-                viewAllHref="/discover?type=tv"
-                viewAllLabel="Открыть каталог"
               />
 
               {!loading && !hasContent && (
