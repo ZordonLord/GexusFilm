@@ -194,7 +194,10 @@ class TmdbClient implements ContentSourceInterface
 
     public function getTv(int $id): array
     {
-        return $this->request("/tv/$id");
+        return $this->request("/tv/$id", [
+            'append_to_response' => 'credits,videos,images,recommendations,watch/providers,alternative_titles,translations,content_ratings',
+            'include_image_language' => 'ru,en,null',
+        ]);
     }
 
     public function getTvSeason(int $seriesId, int $seasonNumber): array

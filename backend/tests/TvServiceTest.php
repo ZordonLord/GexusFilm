@@ -74,6 +74,50 @@ final class TvServiceTest extends TestCase
         self::assertSame(42, $tv['id']);
         self::assertSame('TV Show 42', $tv['name']);
         self::assertSame(5, $tv['number_of_seasons']);
+        self::assertArrayHasKey('credits', $tv);
+        self::assertArrayHasKey('watch/providers', $tv);
+        self::assertArrayHasKey('recommendations', $tv);
+    }
+
+    public function testGetTvDetailsRefreshesCachedPayloadWithoutExpandedSections(): void
+    {
+        $source = new StubContentSource();
+        $repository = $this->createMock(\App\Repository\MovieRepository::class);
+        $repository->method('getCachedResponse')->willReturn(['id' => 42, 'name' => 'Old cache']);
+        $repository->method('getTvDetails')->willReturn(['id' => 42, 'name' => 'Old snapshot']);
+        $repository->expects(self::once())
+            ->method('saveTvDetails')
+            ->with(self::callback(static fn (array $snapshot): bool => isset($snapshot['credits'], $snapshot['videos'], $snapshot['watch/providers'])));
+        $repository->expects(self::once())->method('saveCachedResponse');
+        $service = new TvService($source, $repository);
+
+        $tv = $service->getTvDetails(42);
+
+        self::assertSame('TV Show 42', $tv['name']);
+        self::assertArrayHasKey('credits', $tv);
+    }
+
+    public function testGetTvDetailsReusesCompleteCachedPayload(): void
+    {
+        $source = new StubContentSource();
+        $tv = [
+            'id' => 42,
+            'name' => 'Cached TV show',
+            'credits' => ['cast' => [], 'crew' => []],
+            'videos' => ['results' => []],
+            'images' => ['backdrops' => [], 'posters' => [], 'logos' => []],
+            'recommendations' => ['results' => []],
+            'watch/providers' => ['results' => []],
+            'alternative_titles' => ['results' => []],
+            'translations' => ['translations' => []],
+            'content_ratings' => ['results' => []],
+        ];
+        $repository = $this->createMock(\App\Repository\MovieRepository::class);
+        $repository->method('getCachedResponse')->willReturn($tv);
+        $repository->expects(self::never())->method('getTvDetails');
+        $service = new TvService($source, $repository);
+
+        self::assertSame($tv, $service->getTvDetails(42));
     }
 
     public function testGetTvSeasonReturnsDataFromSource(): void

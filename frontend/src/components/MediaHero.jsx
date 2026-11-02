@@ -81,10 +81,10 @@ export default function MediaHero({ media, type = "movie" }) {
   const hasRating = rating !== "—";
   const hasYear = year !== "—";
   const overview = media.overview?.trim();
-  const originalTitle = media.original_title?.trim();
+  const originalTitle = (media.original_title || media.original_name)?.trim();
   const englishTitle = getEnglishAlternativeTitle(media.alternative_titles, media.translations, originalTitle);
   const tagline = media.tagline?.trim();
-  const releaseDate = formatReleaseDate(media.release_date);
+  const releaseDate = formatReleaseDate(type === "tv" ? media.first_air_date : media.release_date);
   const status = media.status?.trim() ? getStatusLabel(media.status.trim()) : null;
 
   useEffect(() => {
@@ -207,7 +207,7 @@ export default function MediaHero({ media, type = "movie" }) {
           {releaseDate && (
             <li className="media-badge">
               <Icon name="calendar" />
-              <span>Премьера: {releaseDate}</span>
+              <span>{type === "tv" ? "Премьера сериала:" : "Премьера:"} {releaseDate}</span>
             </li>
           )}
           {status && (
@@ -231,6 +231,11 @@ export default function MediaHero({ media, type = "movie" }) {
           {type === "tv" && media.number_of_seasons > 0 && (
             <li className="media-badge">
               {media.number_of_seasons} {media.number_of_seasons === 1 ? "сезон" : "сезонов"}
+            </li>
+          )}
+          {type === "tv" && media.number_of_episodes > 0 && (
+            <li className="media-badge">
+              {media.number_of_episodes} {media.number_of_episodes === 1 ? "эпизод" : "эпизодов"}
             </li>
           )}
         </ul>
@@ -274,17 +279,10 @@ export default function MediaHero({ media, type = "movie" }) {
         </div>
 
         <div className="media-hero__actions">
-          {type === "movie" ? (
-            <a className="media-hero__button media-hero__button--primary" href="#watch-section">
-              <Icon name="play" />
-              <span>Где смотреть</span>
-            </a>
-          ) : (
-            <Link className="media-hero__button media-hero__button--primary" to="/discover">
-              <Icon name="catalog" />
-              <span>Перейти в каталог</span>
-            </Link>
-          )}
+          <a className="media-hero__button media-hero__button--primary" href="#watch-section">
+            <Icon name="play" />
+            <span>Где смотреть</span>
+          </a>
           <button
             className="media-hero__button media-hero__button--secondary"
             type="button"
@@ -293,11 +291,9 @@ export default function MediaHero({ media, type = "movie" }) {
             <Icon name="arrow" />
             <span>Поделиться</span>
           </button>
-          {type === "movie" && (
-            <Link className="media-hero__catalog-link" to="/discover">
-              Вернуться в каталог
-            </Link>
-          )}
+          <Link className="media-hero__catalog-link" to="/discover">
+            Вернуться в каталог
+          </Link>
         </div>
         <p className="media-hero__share-status" role="status" aria-live="polite">
           {shareMessage}

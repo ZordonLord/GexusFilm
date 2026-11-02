@@ -14,7 +14,7 @@ final class CacheKeyFactory
     public static function details(string $mediaType, int $id): string
     {
         if ($mediaType !== 'movie') {
-            return "cache:details:$mediaType:$id";
+            return "cache:details:v2:$mediaType:$id";
         }
 
         return "cache:details:v3:$mediaType:$id";

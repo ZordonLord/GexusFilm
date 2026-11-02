@@ -192,12 +192,12 @@ function CrewSection({ credits }) {
   );
 }
 
-function TrailerSection({ videos }) {
+function TrailerSection({ videos, mediaType }) {
   const trailer = getTrailer(videos);
   if (!trailer) return null;
 
   return (
-    <Section title="Трейлер">
+    <Section title={mediaType === "tv" ? "Трейлер сериала" : "Трейлер"}>
       <div className="movie-details__video">
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${trailer.key}?rel=0`}
@@ -212,7 +212,7 @@ function TrailerSection({ videos }) {
   );
 }
 
-function GallerySection({ images }) {
+function GallerySection({ images, mediaType }) {
   const backdrops = (Array.isArray(images?.backdrops) ? images.backdrops : [])
     .map((image) => ({
       key: image.file_path,
@@ -246,7 +246,7 @@ function GallerySection({ images }) {
   }
 
   return (
-    <Section title="Кадры из фильма">
+    <Section title={mediaType === "tv" ? "Кадры из сериала" : "Кадры из фильма"}>
       <ul className="movie-details__gallery">
         {backdrops.map((image, index) => (
           <li key={image.key}>
@@ -378,20 +378,20 @@ function ProviderList({ groups, regionName, link }) {
   );
 }
 
-function WatchSection({ media }) {
+function WatchSection({ media, mediaType }) {
   const [activeTab, setActiveTab] = useState("official");
   const watchProviders = media["watch/providers"];
   const russianRegion = watchProviders?.results?.RU;
   const russianGroups = getProviderGroups(russianRegion);
-  const russianLink = getTmdbWatchLink(russianRegion?.link);
+  const russianLink = getTmdbWatchLink(russianRegion?.link, mediaType);
   const productionCountries = Array.isArray(media.production_countries)
     ? media.production_countries
-    : [];
+    : (Array.isArray(media.origin_country) ? media.origin_country : []).map((iso_3166_1) => ({ iso_3166_1 }));
   const originalRegion = productionCountries
     .map((country) => ({ ...country, providers: watchProviders?.results?.[country.iso_3166_1] }))
     .find((country) => country.providers);
   const originalGroups = getProviderGroups(originalRegion?.providers);
-  const originalLink = getTmdbWatchLink(originalRegion?.providers?.link);
+  const originalLink = getTmdbWatchLink(originalRegion?.providers?.link, mediaType);
 
   function handleTabKeyDown(event) {
     const tabButtons = Array.from(event.currentTarget.querySelectorAll('[role="tab"]'));
@@ -411,7 +411,7 @@ function WatchSection({ media }) {
   }
 
   return (
-    <Section title="Смотреть" className="movie-details__section--watch" id="watch-section">
+      <Section title="Смотреть" className="movie-details__section--watch" id="watch-section">
       <div className="movie-details__watch-panel">
         <div className="movie-details__tabs" role="tablist" aria-label="Источники просмотра" onKeyDown={handleTabKeyDown}>
           <button
@@ -446,7 +446,7 @@ function WatchSection({ media }) {
               {originalRegion && (
                 <ProviderList
                   groups={originalGroups}
-                  regionName={`В оригинале · ${originalRegion.name || originalRegion.native_name || originalRegion.english_name || originalRegion.iso_3166_1}`}
+                  regionName={`${mediaType === "tv" ? "В стране производства" : "В оригинале"} · ${originalRegion.name || originalRegion.native_name || originalRegion.english_name || originalRegion.iso_3166_1}`}
                   link={originalLink}
                 />
               )}
@@ -485,7 +485,7 @@ function FranchiseSection({ media, collection }) {
   );
 }
 
-function RecommendationsSection({ recommendations }) {
+function RecommendationsSection({ recommendations, mediaType }) {
   const items = (Array.isArray(recommendations?.results) ? recommendations.results : [])
     .filter((item) => getMediaId(item))
     .slice(0, 8);
@@ -493,15 +493,15 @@ function RecommendationsSection({ recommendations }) {
   if (items.length === 0) return null;
 
   return (
-    <Section title="Рекомендации" className="movie-details__section--recommendations">
+    <Section title={mediaType === "tv" ? "Похожие сериалы" : "Рекомендации"} className="movie-details__section--recommendations">
       <div className="movie-details__scroll-header">
-        <p className="movie-details__scroll-hint">Ещё фильмы для просмотра</p>
+        <p className="movie-details__scroll-hint">{mediaType === "tv" ? "Ещё сериалы для просмотра" : "Ещё фильмы для просмотра"}</p>
         <ScrollControls targetRef={recommendationsRef} label="Рекомендации" />
       </div>
       <div className="movie-details__recommendations-viewport" ref={recommendationsRef} tabIndex="0" aria-label="Рекомендованные фильмы">
         <div className="movie-details__recommendations">
           {items.map((item) => (
-            <MediaCard key={getMediaId(item)} item={item} mediaType="movie" compact />
+            <MediaCard key={getMediaId(item)} item={item} mediaType={mediaType} compact />
           ))}
         </div>
       </div>
@@ -509,7 +509,7 @@ function RecommendationsSection({ recommendations }) {
   );
 }
 
-export default function MovieDetailsSections({ media, collection }) {
+export function MediaDetailsSections({ media, collection, mediaType = "movie" }) {
   const hasTrailer = Boolean(getTrailer(media.videos));
   const hasBackdrops = Array.isArray(media.images?.backdrops) && media.images.backdrops.length > 0;
 
@@ -519,13 +519,17 @@ export default function MovieDetailsSections({ media, collection }) {
       <CastSection credits={media.credits} />
       {(hasTrailer || hasBackdrops) && (
         <div className={`movie-details__media-row${hasTrailer && hasBackdrops ? " movie-details__media-row--split" : ""}`}>
-          <TrailerSection videos={media.videos} />
-          <GallerySection images={media.images} />
+      <TrailerSection videos={media.videos} mediaType={mediaType} />
+      <GallerySection images={media.images} mediaType={mediaType} />
         </div>
       )}
-      <WatchSection media={media} />
-      <FranchiseSection media={media} collection={collection} />
-      <RecommendationsSection recommendations={media.recommendations} />
+      <WatchSection media={media} mediaType={mediaType} />
+      {mediaType === "movie" && <FranchiseSection media={media} collection={collection} />}
+      <RecommendationsSection recommendations={media.recommendations} mediaType={mediaType} />
     </div>
   );
+}
+
+export default function MovieDetailsSections({ media, collection }) {
+  return <MediaDetailsSections media={media} collection={collection} mediaType="movie" />;
 }

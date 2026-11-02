@@ -42,10 +42,20 @@
   z-index: 0;
 }
 
+.tv-seasons {
+  min-width: 0;
+  margin: 0 0 clamp(36px, 5vw, 72px);
+  padding-inline: clamp(24px, 5vw, 88px);
+}
+
 @media (max-width: 768px) {
   .media-page-shell__body {
     padding-top: 76px;
     padding-left: 0;
+  }
+
+  .tv-seasons {
+    padding-inline: 18px;
   }
 }
 

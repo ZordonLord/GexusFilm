@@ -10,6 +10,11 @@ use DateTimeImmutable;
 
 class TvService
 {
+    private const EXPANDED_DETAIL_SECTIONS = [
+        'credits', 'videos', 'images', 'recommendations', 'watch/providers',
+        'alternative_titles', 'translations', 'content_ratings',
+    ];
+
     public function __construct(
         private ContentSourceInterface $contentSource,
         private ?MovieRepository $repository,
@@ -138,13 +143,13 @@ class TvService
     {
         $cacheKey = CacheKeyFactory::details('tv', $id);
 
-        if (($cached = $this->getCached($cacheKey)) !== null) {
+        if (($cached = $this->getCached($cacheKey)) !== null && $this->hasExpandedDetails($cached)) {
             return $cached;
         }
 
         if ($this->repository) {
             $cached = $this->repository->getTvDetails($id);
-            if ($cached) {
+            if ($cached && $this->hasExpandedDetails($cached)) {
                 return $cached;
             }
         }
@@ -155,6 +160,18 @@ class TvService
         $this->saveCached($cacheKey, $tv);
 
         return $tv;
+    }
+
+    /** Проверяет полноту TV-снимка до повторного использования старого кэша. */
+    private function hasExpandedDetails(array $tv): bool
+    {
+        foreach (self::EXPANDED_DETAIL_SECTIONS as $section) {
+            if (!isset($tv[$section]) || !is_array($tv[$section])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function getTvSeason(int $seriesId, int $seasonNumber): array

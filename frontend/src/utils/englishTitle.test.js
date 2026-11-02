@@ -19,6 +19,20 @@ test("falls back to an English-region alternative title", () => {
   ), "British title");
 });
 
+test("uses TV translation names and alternative titles", () => {
+  assert.equal(getEnglishAlternativeTitle(
+    { results: [{ iso_3166_1: "US", title: "US Series Title" }] },
+    { translations: [{ iso_639_1: "en", data: { name: "English Series Name" } }] },
+    "日本語の名前",
+  ), "English Series Name");
+
+  assert.equal(getEnglishAlternativeTitle(
+    { results: [{ iso_3166_1: "US", title: "US Series Title" }] },
+    { translations: [] },
+    "日本語の名前",
+  ), "US Series Title");
+});
+
 test("does not label the original or non-English region title as English", () => {
   assert.equal(getEnglishAlternativeTitle(
     { titles: [

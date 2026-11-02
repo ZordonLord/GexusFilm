@@ -10,7 +10,7 @@ import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import MediaHero from "../components/MediaHero";
-import MovieDetailsSections from "../components/MovieDetailsSections";
+import MovieDetailsSections, { MediaDetailsSections } from "../components/MovieDetailsSections";
 import SeasonList from "../components/SeasonList";
 
 import "../styles/MediaPage.css";
@@ -113,10 +113,13 @@ export default function MediaPage() {
             {type === "movie" && <MovieDetailsSections media={media} collection={collection} />}
 
             {type === "tv" && (
-              <SeasonList
-                seriesId={media.id}
-                seasons={media.seasons || []}
-              />
+              <div className="tv-seasons">
+                <SeasonList
+                  seriesId={media.id}
+                  seasons={media.seasons || []}
+                />
+                <MediaDetailsSections media={media} mediaType="tv" />
+              </div>
             )}
           </div>
 

@@ -233,6 +233,15 @@ final class StubContentSource implements ContentSourceInterface
             'genres' => [['id' => 18, 'name' => 'Drama']],
             'episode_run_time' => [45],
             'number_of_seasons' => 5,
+            'number_of_episodes' => 50,
+            'credits' => ['cast' => [], 'crew' => []],
+            'videos' => ['results' => []],
+            'images' => ['backdrops' => [], 'posters' => [], 'logos' => []],
+            'recommendations' => ['results' => []],
+            'watch/providers' => ['results' => []],
+            'alternative_titles' => ['results' => []],
+            'translations' => ['translations' => []],
+            'content_ratings' => ['results' => []],
         ];
     }
 
