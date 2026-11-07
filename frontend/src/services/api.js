@@ -7,6 +7,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
   timeout: 10000,
+  withCredentials: true,
 });
 
 async function request(endpoint, params = {}) {
@@ -92,3 +93,48 @@ export const getDiscoverTv = (params = {}) =>
 
 export const getTvGenres = () =>
   request("/genres", { type: "tv" });
+
+// -- Authentication --
+
+async function authenticatedWrite(method, endpoint, data = {}) {
+  const { data: csrf } = await api.get("/auth/csrf");
+  const response = await api.request({
+    method,
+    url: endpoint,
+    data,
+    headers: { "X-CSRF-Token": csrf.csrf_token },
+  });
+  return response.data;
+}
+
+export const getCurrentUser = async () => {
+  const response = await api.get("/auth/session");
+  return response.data.user;
+};
+
+export const register = (data) => authenticatedWrite("post", "/auth/register", data);
+
+export const login = (data) => authenticatedWrite("post", "/auth/login", data);
+
+export const logout = () => authenticatedWrite("post", "/auth/logout");
+
+export const getFavorites = async () => (await api.get("/me/favorites")).data.results;
+
+export const getVisitHistory = async () => (await api.get("/me/history")).data.results;
+
+export const getMediaByType = (mediaType, sourceId) => {
+  if (mediaType === "movie") return getMovie(sourceId);
+  if (mediaType === "tv") return getTvShow(sourceId);
+  return Promise.reject(new Error("Unsupported media type"));
+};
+
+export const recordMediaVisit = (mediaType, sourceId) =>
+  authenticatedWrite("post", `/me/history/${mediaType}/${sourceId}`);
+
+export const clearVisitHistory = () => authenticatedWrite("delete", "/me/history");
+
+export const getFavoriteStatus = async (mediaType, sourceId) =>
+  (await api.get(`/me/favorites/${mediaType}/${sourceId}`)).data.is_favorite;
+
+export const setFavorite = async (mediaType, sourceId, isFavorite) =>
+  (await authenticatedWrite(isFavorite ? "post" : "delete", `/me/favorites/${mediaType}/${sourceId}`)).is_favorite;

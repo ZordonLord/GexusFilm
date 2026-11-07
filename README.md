@@ -28,6 +28,8 @@ PostgreSQL сохраняет media-снапшоты и полные TTL-кэш-
 - страницы деталей фильма и сериала, сезоны и эпизоды;
 - поиск фильмов, сериалов и персон; каталог TMDB с URL-фильтрами и пагинацией;
 - PostgreSQL-снапшоты медиа и TTL-кэш полных ответов TMDB;
+- регистрация, вход, профиль и выход через серверные сессии;
+- личное избранное и история посещённых страниц медиа;
 - сохранение сводных и детальных данных медиа в PostgreSQL;
 - локальная защита TMDB: singleflight, ограничение запросов и circuit breaker;
 - единый frontend Media UI, front-controller и параметризованный Router.
@@ -37,7 +39,7 @@ PostgreSQL сохраняет media-снапшоты и полные TTL-кэш-
 | Область | Технологии |
 | --- | --- |
 | Frontend | React 19, React Router 7, Vite 8, Axios |
-| Backend | PHP 8.1+, Composer, PSR-4, собственный Router |
+| Backend | PHP 8.1+, Composer, PSR-4, собственный Router, PHP sessions |
 | Database | PostgreSQL 16 |
 | External API | TMDB API через `ContentSourceInterface` и `TmdbClient` |
 | Tests | PHPUnit 11 |
@@ -173,7 +175,7 @@ CREATE USER gexusfilm WITH PASSWORD 'замените-на-сильный-пар
 CREATE DATABASE gexusfilm OWNER gexusfilm;
 ```
 
-Затем примените схему проекта:
+Затем примените начальную схему проекта:
 
 ```bash
 psql -h 127.0.0.1 -U gexusfilm -d gexusfilm -f backend/database.sql
@@ -183,6 +185,16 @@ psql -h 127.0.0.1 -U gexusfilm -d gexusfilm -f backend/database.sql
 hostname или IP. Команда `psql` попросит пароль пользователя PostgreSQL. Если
 база и пользователь уже существуют, достаточно выполнить только команду `psql`.
 
+Для существующей базы применяйте последующие изменения повторяемым runner-ом:
+
+```powershell
+composer --working-dir=backend migrate
+```
+
+Не редактируйте уже применённые migration-файлы в production. `database.sql`
+содержит bootstrap-схему для новых установок; последовательность миграций хранится
+в `backend/database/migrations/`.
+
 В `backend/.env` укажите те же параметры подключения:
 
 ```env
@@ -191,7 +203,14 @@ DB_PORT=5432
 DB_DATABASE=gexusfilm
 DB_USERNAME=gexusfilm
 DB_PASSWORD=пароль-пользователя-postgresql
+APP_ENV=development
+SESSION_COOKIE_SECURE=false
+CORS_ALLOWED_ORIGINS=
 ```
+
+В production установите `APP_ENV=production`, `SESSION_COOKIE_SECURE=true` и задайте
+`CORS_ALLOWED_ORIGINS` только для реальных origin frontend, если frontend и API
+разнесены по origin. Не используйте wildcard CORS для credentials.
 
 Корневой `.env` в этом варианте не нужен: он используется только для подстановки
 параметров Docker Compose.
@@ -322,12 +341,15 @@ sudo systemctl reload nginx
 
 Для production настройте HTTPS (например, через Certbot), firewall и резервное
 копирование PostgreSQL с хранением копии вне сервера и тестом восстановления.
-Production уже существует, но backup/restore зафиксированы как незакрытый
-операционный риск; подробнее — заметки Obsidian `Decisions` и `ProductBacklog`.
+Production deployment ещё не выполнялся. Перед ним обязательны HTTPS и Secure
+session cookie, явные CORS/proxy/session-storage настройки, резервная копия БД с
+проверенным восстановлением и отдельное решение по password recovery/email
+verification; подробнее — заметки Obsidian `Decisions` и `ProductBacklog`.
 
 ## API
 
-Все endpoints используют `GET` и возвращают JSON.
+Все endpoints возвращают JSON. Приватные маршруты требуют входа; изменяющие
+cookie-auth запросы защищены CSRF-токеном из `GET /api/auth/csrf`.
 
 | Endpoint | Назначение |
 | --- | --- |
@@ -347,6 +369,16 @@ Production уже существует, но backup/restore зафиксиров
 | `/api/search?q=matrix&type=movie` | Поиск |
 | `/api/discover?type=movie&genre_id=28&page=1` | Подборка по фильтрам |
 | `/api/health` | Состояние PostgreSQL/TMDB-контура |
+| `GET /api/auth/csrf` | CSRF-токен и session cookie |
+| `GET /api/auth/session` | Текущий пользователь или `user: null` |
+| `POST /api/auth/register` | Регистрация (нейтральный ответ `202`) |
+| `POST /api/auth/login` | Вход, серверная сессия |
+| `POST /api/auth/logout` | Выход; требует CSRF |
+| `GET /api/me` | Профиль текущего пользователя |
+| `/api/me/favorites` | Чтение/добавление/удаление избранного |
+| `GET /api/me/history` | Последние посещённые страницы медиа |
+| `POST /api/me/history/{media_type}/{source_id}` | Запись посещения текущего медиа |
+| `DELETE /api/me/history` | Очистка истории текущего пользователя |
 
 `/api/search` и `/api/discover` получают актуальные результаты через
 `ContentSourceInterface`/TMDB. PostgreSQL хранит media-снапшоты и полный TTL-кэш
@@ -382,11 +414,11 @@ npm run build
 
 ## План развития
 
-Каталог, поиск/discover, URL-фильтры, UI состояний и TMDB-пагинация уже реализованы.
-Ближайшие задачи — повторно проверить безопасность локальных credentials, выполнить
-согласованные API/frontend smoke-проверки и измерить фактические узкие места до
-добавления оптимизаций. После этого следующий продуктовый этап — аккаунты; личные
-списки требуют принятой auth-модели и проверки ownership.
+Каталог, поиск/discover, URL-фильтры, UI состояний и TMDB-пагинация реализованы.
+Реализован первый сквозной этап аккаунтов и пользовательских сценариев: сессии,
+избранное и история посещённых страниц. Незавершённое: восстановление пароля/email
+verification, полноценная продакшен-настройка сессий/rate limit и UX-полировка
+мобильных/краевых состояний; см. [[ProductBacklog]] в Obsidian.
 
 ### Отложенная инфраструктура
 

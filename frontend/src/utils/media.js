@@ -61,6 +61,14 @@ export function getMediaKey(item, fallback = "movie") {
   return `${getMediaType(item, fallback)}-${id}`;
 }
 
+export function getMediaIdentityKey(mediaType, sourceId) {
+  if (!VALID_MEDIA_TYPES.has(mediaType) || sourceId === null || sourceId === undefined || sourceId === "") {
+    return null;
+  }
+
+  return `${mediaType}:${sourceId}`;
+}
+
 export function getMediaYear(item) {
   const date = item?.release_date || item?.first_air_date;
   return date ? date.slice(0, 4) : "—";

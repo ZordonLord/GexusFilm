@@ -8,6 +8,9 @@ use App\Exception\ServiceUnavailableException;
 use App\Exception\UpstreamException;
 use App\Exception\UpstreamTimeoutException;
 use App\Exception\ValidationException;
+use App\Exception\ConflictException;
+use App\Exception\ForbiddenException;
+use App\Exception\UnauthorizedException;
 use Throwable;
 use InvalidArgumentException;
 
@@ -40,6 +43,39 @@ class ExceptionHandler
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
                     'message' => 'Параметры запроса некорректны',
+                ],
+            ]);
+            return;
+        }
+
+        if ($exception instanceof ConflictException) {
+            http_response_code(409);
+            self::jsonResponse([
+                'error' => [
+                    'code' => 'CONFLICT',
+                    'message' => $exception->getMessage(),
+                ],
+            ]);
+            return;
+        }
+
+        if ($exception instanceof UnauthorizedException) {
+            http_response_code(401);
+            self::jsonResponse([
+                'error' => [
+                    'code' => 'UNAUTHORIZED',
+                    'message' => $exception->getMessage(),
+                ],
+            ]);
+            return;
+        }
+
+        if ($exception instanceof ForbiddenException) {
+            http_response_code(403);
+            self::jsonResponse([
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => $exception->getMessage(),
                 ],
             ]);
             return;

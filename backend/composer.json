@@ -25,7 +25,8 @@
     "scripts": {
         "test": "phpunit",
         "lint": "phpcs",
-        "lint-fix": "phpcbf"
+        "lint-fix": "phpcbf",
+        "migrate": "php bin/migrate.php"
     },
     "config": {
         "sort-packages": true,

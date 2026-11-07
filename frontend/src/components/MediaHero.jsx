@@ -12,6 +12,8 @@ import {
 } from "../utils/media";
 import { getTmdbImageUrl } from "../utils/tmdbImage";
 import { getEnglishAlternativeTitle } from "../utils/englishTitle";
+import { getFavoriteStatus, setFavorite } from "../services/api";
+import { useAuth } from "../contexts/useAuth";
 
 import "../styles/MediaHero.css";
 
@@ -66,6 +68,10 @@ export default function MediaHero({ media, type = "movie" }) {
   const [shareMessage, setShareMessage] = useState("");
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [overviewNeedsToggle, setOverviewNeedsToggle] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoritePending, setFavoritePending] = useState(false);
+  const [favoriteMessage, setFavoriteMessage] = useState("");
+  const { user } = useAuth();
   const overviewRef = useRef(null);
 
   const poster = posterFailed
@@ -130,6 +136,34 @@ export default function MediaHero({ media, type = "movie" }) {
       window.removeEventListener("resize", measureOverflow);
     };
   }, [overview]);
+
+  useEffect(() => {
+    let active = true;
+    if (user) {
+      getFavoriteStatus(type, Number(media.id))
+        .then((favorite) => { if (active) setIsFavorite(favorite); })
+        .catch(() => { if (active) setFavoriteMessage("Не удалось загрузить избранное."); });
+    }
+    return () => { active = false; };
+  }, [user, type, media.id]);
+
+  async function toggleFavorite() {
+    if (!user) {
+      setFavoriteMessage("Войдите, чтобы сохранить контент.");
+      return;
+    }
+    setFavoritePending(true);
+    setFavoriteMessage("");
+    try {
+      const nextState = await setFavorite(type, Number(media.id), !isFavorite);
+      setIsFavorite(nextState);
+      setFavoriteMessage(nextState ? "Добавлено в избранное." : "Удалено из избранного.");
+    } catch {
+      setFavoriteMessage("Не удалось обновить избранное. Попробуйте ещё раз.");
+    } finally {
+      setFavoritePending(false);
+    }
+  }
 
   async function shareMedia() {
     const shareData = {
@@ -279,6 +313,16 @@ export default function MediaHero({ media, type = "movie" }) {
         </div>
 
         <div className="media-hero__actions">
+          <button
+            className="media-hero__button media-hero__button--secondary"
+            type="button"
+            onClick={toggleFavorite}
+            disabled={favoritePending}
+            aria-pressed={isFavorite}
+          >
+            <span aria-hidden="true">{isFavorite ? "♥" : "♡"}</span>
+            <span>{favoritePending ? "Сохраняем…" : isFavorite ? "В избранном" : "В избранное"}</span>
+          </button>
           <a className="media-hero__button media-hero__button--primary" href="#watch-section">
             <Icon name="play" />
             <span>Где смотреть</span>
@@ -296,7 +340,7 @@ export default function MediaHero({ media, type = "movie" }) {
           </Link>
         </div>
         <p className="media-hero__share-status" role="status" aria-live="polite">
-          {shareMessage}
+          {[favoriteMessage, shareMessage].filter(Boolean).join(" ")}
         </p>
       </div>
     </section>

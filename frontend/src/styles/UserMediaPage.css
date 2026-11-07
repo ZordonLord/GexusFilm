@@ -1,0 +1,73 @@
+.user-media-page { min-height: 100vh; }
+.user-media-page__body { display: flex; min-height: 100vh; }
+.user-media-page__main {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--sidebar-width);
+  padding: 120px clamp(20px, 4vw, 56px) 32px;
+  transition: margin-left var(--transition);
+}
+.user-media-page__main--mobile { margin-left: 0; }
+.user-media-page__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+.user-media-page__header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -.04em;
+}
+.user-media-page__header p:last-child { margin: 8px 0 0; color: var(--text-secondary); }
+.user-media-page__eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: .75rem;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.user-media-page__clear,
+.user-media-page__state button,
+.user-media-page__empty a {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.user-media-page__clear:disabled { opacity: .65; cursor: wait; }
+.user-media-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 20px;
+}
+.user-media-page__item time { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: .8rem; }
+.user-media-page__state,
+.user-media-page__empty {
+  display: grid;
+  min-height: 220px;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.user-media-page__empty h2,
+.user-media-page__empty p { margin: 0; }
+.user-media-page__empty h2 { color: var(--text); }
+.user-media-page__empty a { display: inline-flex; align-items: center; margin-top: 8px; background: var(--primary); }
+@media (max-width: 760px) {
+  .user-media-page__main { padding: 92px 16px 24px; }
+  .user-media-page__header { align-items: flex-start; flex-direction: column; }
+}

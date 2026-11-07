@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { getMovie, getMovieCollection, getTvShow } from "../services/api";
+import { getMovie, getMovieCollection, getTvShow, recordMediaVisit } from "../services/api";
 import { getTmdbImageUrl } from "../utils/tmdbImage";
+import { useAuth } from "../contexts/useAuth";
 
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
@@ -22,6 +23,7 @@ const API_BY_TYPE = {
 
 export default function MediaPage() {
   const { type, id } = useParams();
+  const { user } = useAuth();
 
   const [media, setMedia] = useState(null);
   const [collection, setCollection] = useState(null);
@@ -65,6 +67,17 @@ export default function MediaPage() {
       active = false;
     };
   }, [type, id]);
+
+  useEffect(() => {
+    if (user && media) {
+      const timer = window.setTimeout(() => {
+        recordMediaVisit(type, Number(id)).catch(() => null);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    return undefined;
+  }, [user, media, type, id]);
 
   if (loading) {
     return (

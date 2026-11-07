@@ -11,6 +11,73 @@ function createRouter(): Router
 {
     $router = new Router();
 
+    $router->get('/api/auth/csrf', static function (array $params): void {
+        json_response(auth_controller()->csrf());
+    });
+
+    $router->get('/api/auth/session', static function (array $params): void {
+        json_response(auth_controller()->currentUser());
+    });
+
+    $router->post('/api/auth/register', static function (array $params): void {
+        json_response(auth_controller()->register($params, request_csrf_token()), 202);
+    });
+
+    $router->post('/api/auth/login', static function (array $params): void {
+        json_response(auth_controller()->login($params, request_csrf_token()));
+    });
+
+    $router->get('/api/me', static function (array $params): void {
+        json_response(auth_controller()->profile());
+    });
+
+    $router->post('/api/auth/logout', static function (array $params): void {
+        json_response(auth_controller()->logout(request_csrf_token()));
+    });
+
+    $router->get('/api/me/favorites', static function (array $params): void {
+        json_response(user_media_controller()->getFavorites());
+    });
+
+    $router->get('/api/me/history', static function (array $params): void {
+        json_response(user_media_controller()->getHistory());
+    });
+
+    $router->get('/api/me/favorites/{media_type}/{source_id}', static function (array $params): void {
+        json_response(user_media_controller()->isFavorite(
+            (string) ($params['media_type'] ?? ''),
+            (int) ($params['source_id'] ?? 0),
+        ));
+    });
+
+    $router->post('/api/me/favorites/{media_type}/{source_id}', static function (array $params): void {
+        json_response(user_media_controller()->addFavorite(
+            request_body_csrf_token($params),
+            (string) ($params['media_type'] ?? ''),
+            (int) ($params['source_id'] ?? 0),
+        ));
+    });
+
+    $router->delete('/api/me/favorites/{media_type}/{source_id}', static function (array $params): void {
+        json_response(user_media_controller()->removeFavorite(
+            request_body_csrf_token($params),
+            (string) ($params['media_type'] ?? ''),
+            (int) ($params['source_id'] ?? 0),
+        ));
+    });
+
+    $router->post('/api/me/history/{media_type}/{source_id}', static function (array $params): void {
+        json_response(user_media_controller()->recordVisit(
+            request_body_csrf_token($params),
+            (string) ($params['media_type'] ?? ''),
+            (int) ($params['source_id'] ?? 0),
+        ));
+    });
+
+    $router->delete('/api/me/history', static function (array $params): void {
+        json_response(user_media_controller()->clearHistory(request_body_csrf_token($params)));
+    });
+
     $router->get('/api/health', static function (array $params): void {
         json_response([
             'status' => 'ok',

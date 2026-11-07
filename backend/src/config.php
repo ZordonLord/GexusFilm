@@ -106,6 +106,77 @@ function rate_limit_config(): array
     ];
 }
 
+function auth_rate_limit_config(): array
+{
+    return [
+        'register' => max(1, (int) env_value('AUTH_RATE_LIMIT_REGISTER', '5')),
+        'login' => max(1, (int) env_value('AUTH_RATE_LIMIT_LOGIN', '10')),
+        'window_seconds' => max(1, (int) env_value('AUTH_RATE_LIMIT_WINDOW_SECONDS', '60')),
+    ];
+}
+
+function app_environment(): string
+{
+    $configuredEnvironment = getenv('APP_ENV');
+    if ($configuredEnvironment !== false && $configuredEnvironment !== '') {
+        return $configuredEnvironment;
+    }
+
+    return str_contains((string) ($_SERVER['SERVER_SOFTWARE'] ?? ''), 'Development Server')
+        ? 'development'
+        : 'production';
+}
+
+/** @return list<string> */
+function cors_allowed_origins(): array
+{
+    $configuredOrigins = getenv('CORS_ALLOWED_ORIGINS');
+    $defaultOrigins = app_environment() === 'development'
+        ? 'http://localhost:5173,http://127.0.0.1:5173'
+        : '';
+    $originsValue = $configuredOrigins !== false && $configuredOrigins !== ''
+        ? $configuredOrigins
+        : $defaultOrigins;
+    $origins = array_map('trim', explode(',', $originsValue));
+
+    return array_values(array_filter($origins, static fn (string $origin): bool => $origin !== ''));
+}
+
+function is_allowed_request_origin(string $origin): bool
+{
+    if (in_array($origin, cors_allowed_origins(), true)) {
+        return true;
+    }
+
+    $originParts = parse_url($origin);
+    $requestHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $requestParts = parse_url('//' . $requestHost);
+    if (!is_array($originParts) || !is_array($requestParts)) {
+        return false;
+    }
+
+    $isSecureRequest = session_cookie_secure();
+    $expectedScheme = $isSecureRequest ? 'https' : 'http';
+
+    return strtolower((string) ($originParts['scheme'] ?? '')) === $expectedScheme
+        && strtolower((string) ($originParts['host'] ?? '')) === strtolower((string) ($requestParts['host'] ?? ''))
+        && (int) ($originParts['port'] ?? ($expectedScheme === 'https' ? 443 : 80))
+            === (int) ($requestParts['port'] ?? ($expectedScheme === 'https' ? 443 : 80));
+}
+
+function session_cookie_secure(): bool
+{
+    $configuredValue = getenv('SESSION_COOKIE_SECURE');
+    if ($configuredValue !== false && $configuredValue !== '') {
+        return filter_var($configuredValue, FILTER_VALIDATE_BOOL);
+    }
+
+    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $host = parse_url('//' . $host, PHP_URL_HOST) ?: $host;
+
+    return !in_array($host, ['localhost', '127.0.0.1', '[::1]'], true);
+}
+
 function tmdb_protection_config(): array
 {
     return [

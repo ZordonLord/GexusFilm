@@ -118,4 +118,17 @@ final class RouterTest extends TestCase
         // Clean up
         $_GET = [];
     }
+
+    public function testRequestBodyIsPassedToRouteHandler(): void
+    {
+        $router = new Router();
+        $captured = [];
+        $router->post('/api/auth/register', static function (array $params) use (&$captured): void {
+            $captured = $params;
+        });
+
+        $router->dispatch('POST', '/api/auth/register', ['email' => 'user@example.com']);
+
+        self::assertSame('user@example.com', $captured['email']);
+    }
 }

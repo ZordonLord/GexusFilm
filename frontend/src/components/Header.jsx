@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { buildSearchPath } from "../utils/search";
 import { useSidebar } from "./SidebarContext";
+import { useAuth } from "../contexts/useAuth";
 
 import "../styles/Header.css";
 
@@ -12,6 +13,7 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isOpen, toggleSidebar } = useSidebar();
+  const { user, loading } = useAuth();
   const [isHidden, setIsHidden] = useState(false);
   const lastScrollY = useRef(0);
   const currentQuery = location.pathname === "/search"
@@ -123,8 +125,8 @@ export default function Header() {
 
       {/* Правая часть — кнопка авторизации */}
       <div className="site-header__actions">
-        <button
-          type="button"
+        <Link
+          to={user ? "/profile" : "/auth"}
           className="site-header__login"
         >
           <svg
@@ -140,8 +142,8 @@ export default function Header() {
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             />
           </svg>
-          <span className="site-header__login-text">Войти</span>
-        </button>
+          <span className="site-header__login-text">{loading ? "…" : user ? (user.display_name || "Профиль") : "Войти"}</span>
+        </Link>
       </div>
       </header>
     </>

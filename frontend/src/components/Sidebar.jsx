@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 
 import { useSidebar } from "./SidebarContext";
+import { useAuth } from "../contexts/useAuth";
 
 import "../styles/Sidebar.css";
 
@@ -17,6 +18,8 @@ const navItems = [
 export default function Sidebar() {
   const location = useLocation();
   const { isMobile, isOpen, closeSidebar } = useSidebar();
+  const { user } = useAuth();
+  const visibleNavItems = user ? navItems : navItems.filter((item) => !["/favorites", "/history"].includes(item.path));
 
   const sidebarState = isMobile
     ? isOpen ? "app-sidebar--mobile-open" : "app-sidebar--mobile-hidden"
@@ -46,7 +49,7 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="app-sidebar__nav">
         <ul className="app-sidebar__list">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <li key={item.path}>

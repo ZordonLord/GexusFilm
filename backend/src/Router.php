@@ -24,6 +24,11 @@ final class Router
         return $this->add('POST', $path, $handler);
     }
 
+    public function delete(string $path, callable $handler): self
+    {
+        return $this->add('DELETE', $path, $handler);
+    }
+
     public function options(string $path, callable $handler): self
     {
         return $this->add('OPTIONS', $path, $handler);
@@ -48,7 +53,7 @@ final class Router
         return $this;
     }
 
-    public function dispatch(string $method, string $path): void
+    public function dispatch(string $method, string $path, array $body = []): void
     {
         $path = $this->normalizePath($path);
 
@@ -64,7 +69,7 @@ final class Router
 
         if ($handler !== null) {
             $this->sendJsonHeaders();
-            $this->callHandler($handler, $_GET);
+            $this->callHandler($handler, array_merge($_GET, $body));
 
             return;
         }
@@ -75,7 +80,7 @@ final class Router
 
         if ($matched !== null) {
             $this->sendJsonHeaders();
-            $params = array_merge($_GET, $pathParams);
+            $params = array_merge($_GET, $body, $pathParams);
             $this->callHandler($matched, $params);
 
             return;
@@ -152,8 +157,15 @@ final class Router
 
     private function sendCorsHeaders(): void
     {
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+        if ($origin !== '' && is_allowed_request_origin($origin)) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+            header('Vary: Origin');
+        }
+
+        header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
     }
 }
